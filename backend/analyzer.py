@@ -84,39 +84,60 @@ class TableAnalyzer:
                 "q75": None,
                 "missing": safe_int(self.df[column].isnull().sum())
             }
-        else:
-            stats = {
-                "count": safe_int(data.count()),
-                "mean": safe_float(data.mean()),
-                "median": safe_float(data.median()),
-                "std": safe_float(data.std()),
-                "min": safe_float(data.min()),
-                "max": safe_float(data.max()),
-                "q25": safe_float(data.quantile(0.25)),
-                "q75": safe_float(data.quantile(0.75)),
-                "missing": safe_int(self.df[column].isnull().sum())
-            }
+            # No plot for empty data
+            return {"stats": stats}
 
-        # Create histogram
-        fig = px.histogram(
-            self.df,
-            x=column,
-            title=f"Distribution of {column}",
-            nbins=30
-        )
-        fig.update_layout(
-            showlegend=False,
-            hovermode='x unified'
-        )
-
-        return {
-            "stats": stats,
-            "plot": fig.to_json()
+        # Calculate stats
+        stats = {
+            "count": safe_int(data.count()),
+            "mean": safe_float(data.mean()),
+            "median": safe_float(data.median()),
+            "std": safe_float(data.std()),
+            "min": safe_float(data.min()),
+            "max": safe_float(data.max()),
+            "q25": safe_float(data.quantile(0.25)),
+            "q75": safe_float(data.quantile(0.75)),
+            "missing": safe_int(self.df[column].isnull().sum())
         }
+
+        # Create histogram only if we have data
+        try:
+            fig = px.histogram(
+                data,
+                x=data.values,
+                title=f"Distribution of {column}",
+                nbins=min(30, len(data.unique()))
+            )
+            fig.update_layout(
+                showlegend=False,
+                hovermode='x unified',
+                xaxis_title=column,
+                yaxis_title="Count"
+            )
+
+            return {
+                "stats": stats,
+                "plot": fig.to_json()
+            }
+        except Exception as e:
+            # If plot creation fails, return stats only
+            return {"stats": stats}
 
     def analyze_categorical(self, column: str) -> Dict[str, Any]:
         """Analyze a categorical column"""
         data = self.df[column].dropna()
+
+        # Handle empty data
+        if len(data) == 0:
+            stats = {
+                "count": 0,
+                "unique": 0,
+                "top": None,
+                "top_freq": 0,
+                "missing": safe_int(self.df[column].isnull().sum())
+            }
+            return {"stats": stats}
+
         value_counts = data.value_counts()
 
         stats = {
@@ -127,24 +148,33 @@ class TableAnalyzer:
             "missing": safe_int(self.df[column].isnull().sum())
         }
 
-        # Create bar chart (top 10 values)
-        top_values = value_counts.head(10)
-        fig = px.bar(
-            x=top_values.index,
-            y=top_values.values,
-            title=f"Top Values in {column}",
-            labels={'x': column, 'y': 'Count'}
-        )
-        fig.update_layout(
-            showlegend=False,
-            hovermode='x unified'
-        )
+        # Create bar chart only if we have data
+        try:
+            top_values = value_counts.head(10)
+            fig = px.bar(
+                x=top_values.index.astype(str),
+                y=top_values.values,
+                title=f"Top Values in {column}",
+                labels={'x': column, 'y': 'Count'}
+            )
+            fig.update_layout(
+                showlegend=False,
+                hovermode='x unified',
+                xaxis_title=column,
+                yaxis_title="Count"
+            )
 
-        return {
-            "stats": stats,
-            "value_counts": value_counts.head(20).to_dict(),
-            "plot": fig.to_json()
-        }
+            return {
+                "stats": stats,
+                "value_counts": {str(k): int(v) for k, v in value_counts.head(20).items()},
+                "plot": fig.to_json()
+            }
+        except Exception as e:
+            # If plot creation fails, return stats only
+            return {
+                "stats": stats,
+                "value_counts": {str(k): int(v) for k, v in value_counts.head(20).items()}
+            }
 
     def analyze_all(self) -> Dict[str, Any]:
         """Perform complete analysis on all columns"""

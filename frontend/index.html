@@ -695,37 +695,56 @@
             if (data.analysis && data.analysis.plot) {
                 const plotDiv = document.createElement('div');
                 plotDiv.className = 'plot-container';
-                plotDiv.id = `plot-${name.replace(/\s+/g, '-')}`;
+                const sanitizedName = name.replace(/[^a-zA-Z0-9]/g, '-');
+                plotDiv.id = `plot-${sanitizedName}-${Date.now()}`;
                 card.appendChild(plotDiv);
 
-                // Render plot with dark theme
-                const plotData = JSON.parse(data.analysis.plot);
-                const layout = {
-                    ...plotData.layout,
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    font: {
-                        color: '#f1f5f9',
-                        family: 'Inter, sans-serif'
-                    },
-                    xaxis: {
-                        ...plotData.layout.xaxis,
-                        gridcolor: '#334155',
-                        color: '#f1f5f9'
-                    },
-                    yaxis: {
-                        ...plotData.layout.yaxis,
-                        gridcolor: '#334155',
-                        color: '#f1f5f9'
-                    }
-                };
+                // Render plot with dark theme after DOM is ready
+                try {
+                    const plotData = JSON.parse(data.analysis.plot);
 
-                Plotly.newPlot(plotDiv.id, plotData.data, layout, {
-                    responsive: true,
-                    displayModeBar: true,
-                    modeBarButtonsToRemove: ['lasso2d', 'select2d'],
-                    displaylogo: false
-                });
+                    // Ensure we have valid data
+                    if (!plotData || !plotData.data || !plotData.layout) {
+                        console.warn(`Invalid plot data for ${name}`);
+                        return card;
+                    }
+
+                    const layout = {
+                        ...plotData.layout,
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: {
+                            color: '#f1f5f9',
+                            family: 'Inter, sans-serif'
+                        },
+                        xaxis: {
+                            ...(plotData.layout.xaxis || {}),
+                            gridcolor: '#334155',
+                            color: '#f1f5f9'
+                        },
+                        yaxis: {
+                            ...(plotData.layout.yaxis || {}),
+                            gridcolor: '#334155',
+                            color: '#f1f5f9'
+                        }
+                    };
+
+                    // Use setTimeout to ensure DOM is ready
+                    setTimeout(() => {
+                        Plotly.newPlot(plotDiv, plotData.data, layout, {
+                            responsive: true,
+                            displayModeBar: true,
+                            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+                            displaylogo: false
+                        }).catch(err => {
+                            console.error(`Failed to render plot for ${name}:`, err);
+                            plotDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 2rem;">Chart unavailable</p>';
+                        });
+                    }, 100);
+                } catch (err) {
+                    console.error(`Error processing plot for ${name}:`, err);
+                    plotDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 2rem;">Chart unavailable</p>';
+                }
             }
 
             return card;

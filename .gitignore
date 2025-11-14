@@ -45,3 +45,6 @@ htmlcov/
 
 # Generated test files
 test_report.html
+test_api.py
+test_advanced.py
+test_empty_column.py
