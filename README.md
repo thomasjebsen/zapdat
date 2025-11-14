@@ -13,56 +13,108 @@ Automatic Exploratory Data Analysis for your CSV files. Upload a table and insta
 
 ## Quick Start
 
-### 🚀 Simple Setup (Recommended)
+### 🐳 Docker Setup (Easiest!)
+
+The fastest way to get started with zero configuration:
 
 ```bash
-# Install dependencies
-make install
+docker-compose up
+```
 
-# Start the server
+That's it! Visit `http://localhost:8000` and start analyzing your data.
+
+### 🚀 Local Development Setup
+
+#### Option 1: Using Make (Recommended)
+
+```bash
+# First time setup (install deps + pre-commit hooks)
+make setup
+
+# Start the development server
 make run
 ```
 
-That's it! The app will be available at `http://localhost:8000`
+Visit `http://localhost:8000` to use the app!
 
-### 📋 Available Make Commands
+#### Option 2: Manual Setup
+
+```bash
+# Install dependencies (uses uv if available, falls back to pip)
+pip install -r requirements.txt
+
+# Run the server
+cd backend
+uvicorn main:app --reload
+```
+
+### 📋 Development Commands
 
 Run `make help` to see all available commands:
-- `make install` - Install Python dependencies
+
+**Quick Start**
+- `make setup` - First time setup (install all dependencies + pre-commit)
 - `make run` - Start the development server
+- `make docker-up` - Start with Docker Compose
+
+**Development**
+- `make install` - Install Python dependencies
+- `make install-dev` - Install dev dependencies (linting, testing, etc.)
 - `make test` - Run tests
 - `make clean` - Clean up cache files
-- `make setup` - Full setup (install dependencies)
 
-### 📖 Manual Setup (Alternative)
+**Code Quality** (2025 standards!)
+- `make lint` - Run ruff linter
+- `make format` - Auto-format code with ruff
+- `make type-check` - Run mypy type checker
+- `make pre-commit` - Run all pre-commit hooks
+- `make all-checks` - Run all quality checks at once
 
-If you prefer not to use Make:
+**Docker**
+- `make docker-build` - Build Docker image
+- `make docker-up` - Start with Docker Compose
+- `make docker-down` - Stop Docker services
+- `make docker-logs` - View Docker logs
 
-1. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 🛠️ Development Tools
 
-2. **Run the Server**
-   ```bash
-   cd backend
-   uvicorn main:app --reload
-   ```
+This project uses modern 2025 Python tooling:
 
-3. **Upload Your CSV**
-   Open your browser and navigate to `http://localhost:8000`, then drag and drop your CSV file or click to upload.
+- **[uv](https://github.com/astral-sh/uv)** - Ultra-fast Python package installer (optional, falls back to pip)
+- **[ruff](https://github.com/astral-sh/ruff)** - Lightning-fast Python linter and formatter
+- **[mypy](https://mypy-lang.org/)** - Static type checker
+- **[pre-commit](https://pre-commit.com/)** - Git hooks for code quality
+- **[pytest](https://pytest.org/)** - Modern testing framework
+- **GitHub Actions** - Automated CI/CD pipeline
+
+### 🔄 CI/CD Pipeline
+
+Every push and pull request automatically runs:
+- ✅ Ruff linting and formatting checks
+- ✅ Mypy type checking
+- ✅ Pytest test suite
+- ✅ Docker build verification
 
 ## Project Structure
 
 ```
 zapdat/
 ├── backend/
-│   ├── main.py       # FastAPI application
-│   └── analyzer.py   # Data analysis logic
+│   ├── main.py              # FastAPI application
+│   └── analyzer.py          # Data analysis logic
 ├── frontend/
-│   └── index.html    # Web interface
-├── requirements.txt  # Python dependencies
-└── sample_data.csv   # Sample CSV for testing
+│   └── index.html           # Web interface
+├── .github/
+│   └── workflows/
+│       └── ci.yml           # GitHub Actions CI/CD pipeline
+├── pyproject.toml           # Modern Python project config (PEP 621)
+├── requirements.txt         # Python dependencies (legacy support)
+├── Dockerfile               # Production Docker image
+├── Dockerfile.dev           # Development Docker image
+├── docker-compose.yml       # Docker Compose configuration
+├── .pre-commit-config.yaml  # Pre-commit hooks configuration
+├── Makefile                 # Development commands
+└── sample_data.csv          # Sample CSV for testing
 ```
 
 ## What Gets Analyzed
