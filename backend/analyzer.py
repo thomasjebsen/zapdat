@@ -6,6 +6,21 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from typing import Dict, Any, List
+import math
+
+
+def safe_float(value):
+    """Convert a value to float, handling NaN and inf"""
+    if pd.isna(value) or math.isinf(value):
+        return None
+    return float(value)
+
+
+def safe_int(value):
+    """Convert a value to int, handling NaN"""
+    if pd.isna(value):
+        return 0
+    return int(value)
 
 
 class TableAnalyzer:
@@ -19,10 +34,20 @@ class TableAnalyzer:
     def _detect_types(self):
         """Detect the type of each column"""
         for col in self.df.columns:
-            if pd.api.types.is_numeric_dtype(self.df[col]):
-                self.column_types[col] = "numeric"
+            # Check for boolean type first
+            if pd.api.types.is_bool_dtype(self.df[col]):
+                self.column_types[col] = "categorical"
+            # Check for datetime
             elif pd.api.types.is_datetime64_any_dtype(self.df[col]):
                 self.column_types[col] = "datetime"
+            # Check for numeric (but not boolean)
+            elif pd.api.types.is_numeric_dtype(self.df[col]):
+                # Check if it's actually just 0/1 values (boolean-like)
+                unique_vals = self.df[col].dropna().unique()
+                if len(unique_vals) <= 2 and set(unique_vals).issubset({0, 1, 0.0, 1.0}):
+                    self.column_types[col] = "categorical"
+                else:
+                    self.column_types[col] = "numeric"
             else:
                 # Check if it's categorical (low cardinality)
                 unique_ratio = self.df[col].nunique() / len(self.df)
@@ -46,17 +71,31 @@ class TableAnalyzer:
         """Analyze a numeric column"""
         data = self.df[column].dropna()
 
-        stats = {
-            "count": int(data.count()),
-            "mean": float(data.mean()),
-            "median": float(data.median()),
-            "std": float(data.std()),
-            "min": float(data.min()),
-            "max": float(data.max()),
-            "q25": float(data.quantile(0.25)),
-            "q75": float(data.quantile(0.75)),
-            "missing": int(self.df[column].isnull().sum())
-        }
+        # Handle empty data
+        if len(data) == 0:
+            stats = {
+                "count": 0,
+                "mean": None,
+                "median": None,
+                "std": None,
+                "min": None,
+                "max": None,
+                "q25": None,
+                "q75": None,
+                "missing": safe_int(self.df[column].isnull().sum())
+            }
+        else:
+            stats = {
+                "count": safe_int(data.count()),
+                "mean": safe_float(data.mean()),
+                "median": safe_float(data.median()),
+                "std": safe_float(data.std()),
+                "min": safe_float(data.min()),
+                "max": safe_float(data.max()),
+                "q25": safe_float(data.quantile(0.25)),
+                "q75": safe_float(data.quantile(0.75)),
+                "missing": safe_int(self.df[column].isnull().sum())
+            }
 
         # Create histogram
         fig = px.histogram(
@@ -81,11 +120,11 @@ class TableAnalyzer:
         value_counts = data.value_counts()
 
         stats = {
-            "count": int(data.count()),
-            "unique": int(data.nunique()),
+            "count": safe_int(data.count()),
+            "unique": safe_int(data.nunique()),
             "top": str(value_counts.index[0]) if len(value_counts) > 0 else None,
-            "top_freq": int(value_counts.iloc[0]) if len(value_counts) > 0 else 0,
-            "missing": int(self.df[column].isnull().sum())
+            "top_freq": safe_int(value_counts.iloc[0]) if len(value_counts) > 0 else 0,
+            "missing": safe_int(self.df[column].isnull().sum())
         }
 
         # Create bar chart (top 10 values)
@@ -131,9 +170,9 @@ class TableAnalyzer:
                     "type": col_type,
                     "analysis": {
                         "stats": {
-                            "count": int(self.df[col].count()),
-                            "unique": int(self.df[col].nunique()),
-                            "missing": int(self.df[col].isnull().sum())
+                            "count": safe_int(self.df[col].count()),
+                            "unique": safe_int(self.df[col].nunique()),
+                            "missing": safe_int(self.df[col].isnull().sum())
                         }
                     }
                 }

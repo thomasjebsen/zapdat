@@ -4,11 +4,12 @@ Automatic Exploratory Data Analysis for your CSV files. Upload a table and insta
 
 ## Features
 
-- 🚀 **Automatic Type Detection** - Identifies numeric, categorical, and text columns
-- 📈 **Interactive Visualizations** - Hover over charts to explore your data
+- 🚀 **Automatic Type Detection** - Identifies numeric, categorical, boolean, and text columns
+- 📈 **Interactive Visualizations** - Hover over charts to explore your data (powered by Plotly)
 - 📊 **Smart Statistics** - Type-specific analysis (mean/median for numbers, frequency for categories)
 - 🎯 **Data Quality Checks** - Missing values, duplicates, and more
 - ⚡ **Fast & Simple** - Just upload and analyze
+- 🎨 **Modern Design** - Sleek 2025 SaaS interface with dark theme and glassmorphism
 
 ## Quick Start
 
