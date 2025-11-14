@@ -1,0 +1,16 @@
+name,age,city,salary,department,join_date,active
+John Doe,28,New York,75000,Engineering,2020-01-15,true
+Jane Smith,34,San Francisco,95000,Engineering,2019-03-22,true
+Bob Johnson,45,Chicago,68000,Sales,2018-07-10,true
+Alice Williams,29,New York,72000,Marketing,2021-02-01,true
+Charlie Brown,52,Boston,110000,Engineering,2015-11-30,true
+Diana Davis,31,San Francisco,88000,Sales,2020-06-15,false
+Eve Miller,27,Chicago,65000,Marketing,2021-09-01,true
+Frank Wilson,38,New York,92000,Engineering,2017-04-20,true
+Grace Lee,41,Boston,105000,Sales,2016-12-05,true
+Henry Taylor,33,San Francisco,82000,Marketing,2019-08-14,true
+Ivy Anderson,26,Chicago,62000,Engineering,2022-01-10,true
+Jack Thomas,49,New York,98000,Sales,2014-05-25,false
+Kate Jackson,35,Boston,86000,Marketing,2018-10-30,true
+Leo White,30,San Francisco,78000,Engineering,2020-11-12,true
+Mia Harris,44,Chicago,94000,Sales,2017-02-28,true

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>zapdat - Instant Table Insights</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .tagline {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        /* Upload Section */
+        .upload-section {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 20px 60px var(--shadow);
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 4rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(15, 23, 42, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .upload-area:hover::before {
+            opacity: 0.05;
+        }
+
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: scale(1.02);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .upload-button {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Loading State */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+        }
+
+        .loading.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .spinner-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+        }
+
+        .spinner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid rgba(99, 102, 241, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+
+        .spinner:nth-child(2) {
+            border-top-color: var(--secondary);
+            animation-delay: -0.3s;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+        }
+
+        /* Error State */
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 1.25rem 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            display: none;
+            animation: shake 0.5s ease;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* Results */
+        .results {
+            display: none;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        /* Overview Card */
+        .overview-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px var(--shadow);
+        }
+
+        .card-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .overview-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .stat-box:hover {
+            transform: translateY(-4px);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Column Cards */
+        .column-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .column-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 15px 50px var(--shadow);
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .column-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .column-type {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 0.5rem 1.25rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(99, 102, 241, 0.05);
+            border-color: var(--primary);
+        }
+
+        .stat-item-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .stat-item-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .plot-container {
+            margin-top: 2rem;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .tagline {
+                font-size: 1rem;
+            }
+
+            .upload-section {
+                padding: 1.5rem;
+            }
+
+            .upload-area {
+                padding: 2rem 1rem;
+            }
+
+            .column-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">zapdat</div>
+            <p class="tagline">Instant insights from your data, powered by AI-driven analysis</p>
+        </header>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-content">
+                    <div class="upload-icon">📊</div>
+                    <div class="upload-text">Drop your CSV file here</div>
+                    <div class="upload-hint">or click to browse</div>
+                    <button class="upload-button">Choose File</button>
+                </div>
+                <input type="file" id="fileInput" accept=".csv">
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner-container">
+                    <div class="spinner"></div>
+                    <div class="spinner"></div>
+                </div>
+                <p class="loading-text">Analyzing your data...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="overview-card">
+                <h2 class="card-title">
+                    <span>📋</span>
+                    Dataset Overview
+                </h2>
+                <div class="overview-stats" id="overviewStats"></div>
+            </div>
+            <div id="columnAnalysis"></div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+        const uploadButton = document.querySelector('.upload-button');
+
+        // Click handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        async function handleFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                showError('Please upload a CSV file');
+                return;
+            }
+
+            errorDiv.classList.remove('active');
+            results.classList.remove('active');
+            loading.classList.add('active');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                displayResults(data.analysis);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function showError(message) {
+            errorDiv.textContent = '⚠️ ' + message;
+            errorDiv.classList.add('active');
+        }
+
+        function displayResults(analysis) {
+            results.classList.add('active');
+            results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Display overview
+            const overview = analysis.overview;
+            const overviewStats = document.getElementById('overviewStats');
+
+            const totalMissing = Object.values(overview.missing_values).reduce((a, b) => a + b, 0);
+
+            overviewStats.innerHTML = `
+                <div class="stat-box" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                    <div class="stat-value">${overview.rows.toLocaleString()}</div>
+                    <div class="stat-label">Rows</div>
+                </div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                    <div class="stat-value">${overview.columns}</div>
+                    <div class="stat-label">Columns</div>
+                </div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <div class="stat-value">${totalMissing.toLocaleString()}</div>
+                    <div class="stat-label">Missing Values</div>
+                </div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <div class="stat-value">${overview.duplicates.toLocaleString()}</div>
+                    <div class="stat-label">Duplicates</div>
+                </div>
+            `;
+
+            // Display column analysis
+            const columnAnalysis = document.getElementById('columnAnalysis');
+            columnAnalysis.innerHTML = '';
+
+            for (const [columnName, columnData] of Object.entries(analysis.columns)) {
+                const card = createColumnCard(columnName, columnData);
+                columnAnalysis.appendChild(card);
+            }
+        }
+
+        function createColumnCard(name, data) {
+            const card = document.createElement('div');
+            card.className = 'column-card';
+
+            const typeEmoji = {
+                'numeric': '🔢',
+                'categorical': '🏷️',
+                'text': '📝',
+                'datetime': '📅'
+            };
+
+            const header = `
+                <div class="column-header">
+                    <div class="column-name">${typeEmoji[data.type] || '📊'} ${name}</div>
+                    <div class="column-type">${data.type}</div>
+                </div>
+            `;
+
+            let statsHtml = '';
+            if (data.analysis && data.analysis.stats) {
+                const stats = data.analysis.stats;
+                statsHtml = '<div class="stats-grid">';
+
+                for (const [key, value] of Object.entries(stats)) {
+                    let displayValue;
+                    if (value === null || value === undefined) {
+                        displayValue = 'N/A';
+                    } else if (typeof value === 'number') {
+                        displayValue = Number.isInteger(value) ?
+                            value.toLocaleString() :
+                            value.toFixed(2);
+                    } else {
+                        displayValue = value;
+                    }
+
+                    statsHtml += `
+                        <div class="stat-item">
+                            <div class="stat-item-label">${key}</div>
+                            <div class="stat-item-value">${displayValue}</div>
+                        </div>
+                    `;
+                }
+
+                statsHtml += '</div>';
+            }
+
+            card.innerHTML = header + statsHtml;
+
+            // Add plot if available
+            if (data.analysis && data.analysis.plot) {
+                const plotDiv = document.createElement('div');
+                plotDiv.className = 'plot-container';
+                const sanitizedName = name.replace(/[^a-zA-Z0-9]/g, '-');
+                plotDiv.id = `plot-${sanitizedName}-${Date.now()}`;
+                card.appendChild(plotDiv);
+
+                // Render plot with dark theme after DOM is ready
+                try {
+                    const plotData = JSON.parse(data.analysis.plot);
+
+                    // Ensure we have valid data
+                    if (!plotData || !plotData.data || !plotData.layout) {
+                        console.warn(`Invalid plot data for ${name}`);
+                        return card;
+                    }
+
+                    const layout = {
+                        ...plotData.layout,
+                        paper_bgcolor: 'rgba(0,0,0,0)',
+                        plot_bgcolor: 'rgba(0,0,0,0)',
+                        font: {
+                            color: '#f1f5f9',
+                            family: 'Inter, sans-serif'
+                        },
+                        xaxis: {
+                            ...(plotData.layout.xaxis || {}),
+                            gridcolor: '#334155',
+                            color: '#f1f5f9'
+                        },
+                        yaxis: {
+                            ...(plotData.layout.yaxis || {}),
+                            gridcolor: '#334155',
+                            color: '#f1f5f9'
+                        }
+                    };
+
+                    // Use setTimeout to ensure DOM is ready
+                    setTimeout(() => {
+                        Plotly.newPlot(plotDiv, plotData.data, layout, {
+                            responsive: true,
+                            displayModeBar: true,
+                            modeBarButtonsToRemove: ['lasso2d', 'select2d'],
+                            displaylogo: false
+                        }).catch(err => {
+                            console.error(`Failed to render plot for ${name}:`, err);
+                            plotDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 2rem;">Chart unavailable</p>';
+                        });
+                    }, 100);
+                } catch (err) {
+                    console.error(`Error processing plot for ${name}:`, err);
+                    plotDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 2rem;">Chart unavailable</p>';
+                }
+            }
+
+            return card;
+        }
+    </script>
+</body>
+</html>
