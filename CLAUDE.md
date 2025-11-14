@@ -74,13 +74,24 @@ uvicorn main:app --reload
 pytest test_analyzer.py -v
 ```
 
-## Suggested AI Agents for Subtasks
+## Slash Commands (Specialized Agents)
 
-When working on this project, consider using specialized agents for these focused areas:
+This project includes custom slash commands that act as specialized agents for different tasks. These are stored in `.claude/commands/` and can be invoked during development.
 
-### 1. **Developer Agent**
+### Usage
+
+```
+/dev Add a correlation matrix visualization
+/design Improve the file upload experience with better feedback
+/test Run tests and check for edge cases with empty CSV files
+```
+
+### Available Commands
+
+#### `/dev` - Developer Agent
 **When to use**: Backend development, features, and bug fixes
-**Tasks**:
+
+**Responsibilities**:
 - Implement new analysis features (correlation matrix, box plots, datetime analysis)
 - Add new FastAPI endpoints and improve existing ones
 - Fix bugs and handle edge cases (empty files, malformed CSVs, NaN values)
@@ -88,16 +99,13 @@ When working on this project, consider using specialized agents for these focuse
 - Optimize performance for large datasets
 - Write and fix tests
 - Add type hints and improve code quality
-- Implement error handling and validation
 
-**Examples**:
-- "Add a correlation matrix visualization for numeric columns"
-- "Fix the bug where empty CSV files crash the analyzer"
-- "Add endpoint to export analysis as JSON"
+**Example**: `/dev Add endpoint to export analysis as JSON`
 
-### 2. **Design & UX Agent**
+#### `/design` - Design & UX Agent
 **When to use**: UI improvements and user experience
-**Tasks**:
+
+**Responsibilities**:
 - Enhance the web interface design and aesthetics
 - Improve visualization layouts and interactivity
 - Add user-friendly features (filtering, sorting, search)
@@ -105,16 +113,13 @@ When working on this project, consider using specialized agents for these focuse
 - Add dark/light theme toggle
 - Improve accessibility (ARIA labels, keyboard navigation)
 - Create better loading states and error messages
-- Design intuitive data exploration workflows
 
-**Examples**:
-- "Redesign the analysis results to be more scannable"
-- "Add a filter to show only numeric columns"
-- "Improve the file upload experience with better feedback"
+**Example**: `/design Add a filter to show only numeric columns`
 
-### 3. **Testing Agent**
+#### `/test` - Testing Agent
 **When to use**: Quality assurance and validation
-**Tasks**:
+
+**Responsibilities**:
 - Run the test suite and fix failing tests
 - Test with various CSV formats and edge cases
 - Add new test cases for features
@@ -122,12 +127,30 @@ When working on this project, consider using specialized agents for these focuse
 - Test error handling and validation
 - Verify visualizations render correctly
 - Test with large files and performance scenarios
-- Validate JSON output structure
 
-**Examples**:
-- "Test the analyzer with edge cases like single-column CSVs"
-- "Add tests for the new correlation matrix feature"
-- "Test the application with a 50MB CSV file"
+**Example**: `/test Verify the analyzer handles single-column CSVs correctly`
+
+### Creating New Commands
+
+To add a new slash command:
+1. Create a markdown file in `.claude/commands/`
+2. Add frontmatter with description
+3. Write the prompt/instructions
+4. Use `$ARGUMENTS` to accept parameters
+
+Example structure:
+```markdown
+---
+description: Brief description of the command
+---
+
+# Command Name
+
+Your detailed instructions here...
+
+## Task
+$ARGUMENTS
+```
 
 ## Development Guidelines
 
