@@ -76,108 +76,58 @@ pytest test_analyzer.py -v
 
 ## Suggested AI Agents for Subtasks
 
-When working on this project, consider using specialized agents for these tasks:
+When working on this project, consider using specialized agents for these focused areas:
 
-### 1. **test-runner**
-**When to use**: Running and fixing tests
+### 1. **Developer Agent**
+**When to use**: Backend development, features, and bug fixes
 **Tasks**:
-- Run pytest and report failures
-- Analyze test output and suggest fixes
-- Add new test cases for new features
-- Ensure test coverage
-
-**Example**: "Run the test suite and fix any failing tests"
-
-### 2. **bug-fixer**
-**When to use**: Debugging issues or errors
-**Tasks**:
-- Analyze error messages and stack traces
-- Debug type detection issues
-- Fix data handling edge cases (empty files, malformed CSVs)
-- Handle NaN/infinity values in statistics
-
-**Example**: "Debug why categorical columns with 100% missing values crash the analyzer"
-
-### 3. **feature-implementer**
-**When to use**: Adding new functionality
-**Tasks**:
-- Implement roadmap features (correlation matrix, box plots, datetime analysis)
+- Implement new analysis features (correlation matrix, box plots, datetime analysis)
+- Add new FastAPI endpoints and improve existing ones
+- Fix bugs and handle edge cases (empty files, malformed CSVs, NaN values)
 - Add support for new file formats (Excel/XLSX)
-- Implement export functionality (PDF, HTML reports)
-- Add new statistical measures or visualizations
+- Optimize performance for large datasets
+- Write and fix tests
+- Add type hints and improve code quality
+- Implement error handling and validation
 
-**Example**: "Add a correlation matrix visualization for numeric columns"
+**Examples**:
+- "Add a correlation matrix visualization for numeric columns"
+- "Fix the bug where empty CSV files crash the analyzer"
+- "Add endpoint to export analysis as JSON"
 
-### 4. **api-developer**
-**When to use**: Working on backend endpoints
+### 2. **Design & UX Agent**
+**When to use**: UI improvements and user experience
 **Tasks**:
-- Add new FastAPI endpoints
-- Improve error handling and validation
-- Add authentication/rate limiting
-- Implement batch upload functionality
-
-**Example**: "Add an endpoint to compare two CSV files"
-
-### 5. **frontend-developer**
-**When to use**: UI/UX improvements
-**Tasks**:
-- Enhance the web interface design
-- Add interactive features (filtering, sorting)
-- Improve visualization layouts
+- Enhance the web interface design and aesthetics
+- Improve visualization layouts and interactivity
+- Add user-friendly features (filtering, sorting, search)
+- Implement responsive design for mobile devices
 - Add dark/light theme toggle
-- Implement responsive design
+- Improve accessibility (ARIA labels, keyboard navigation)
+- Create better loading states and error messages
+- Design intuitive data exploration workflows
 
-**Example**: "Add a filter to show only numeric columns in the analysis"
+**Examples**:
+- "Redesign the analysis results to be more scannable"
+- "Add a filter to show only numeric columns"
+- "Improve the file upload experience with better feedback"
 
-### 6. **performance-optimizer**
-**When to use**: Improving speed or efficiency
+### 3. **Testing Agent**
+**When to use**: Quality assurance and validation
 **Tasks**:
-- Optimize pandas operations for large files
-- Implement chunked file reading
-- Add caching for repeated analyses
-- Profile and optimize slow functions
-
-**Example**: "Optimize the analyzer to handle CSV files larger than 100MB"
-
-### 7. **documentation-writer**
-**When to use**: Creating or updating docs
-**Tasks**:
-- Update README with new features
-- Add API documentation
-- Create user guides
-- Write inline code documentation
-
-**Example**: "Add docstrings to all functions in analyzer.py"
-
-### 8. **refactoring-specialist**
-**When to use**: Code quality improvements
-**Tasks**:
-- Extract repeated code into utilities
-- Improve code organization
-- Add type hints
-- Implement design patterns
-
-**Example**: "Refactor analyzer.py to separate visualization logic from statistics calculation"
-
-### 9. **security-auditor**
-**When to use**: Security reviews
-**Tasks**:
-- Review file upload security
-- Check for injection vulnerabilities
-- Validate CORS configuration
-- Review dependency vulnerabilities
-
-**Example**: "Audit the file upload endpoint for security vulnerabilities"
-
-### 10. **integration-tester**
-**When to use**: End-to-end testing
-**Tasks**:
-- Test the full upload-analyze-display flow
+- Run the test suite and fix failing tests
 - Test with various CSV formats and edge cases
-- Verify visualization rendering
-- Cross-browser testing
+- Add new test cases for features
+- Perform end-to-end testing of upload-analyze-display flow
+- Test error handling and validation
+- Verify visualizations render correctly
+- Test with large files and performance scenarios
+- Validate JSON output structure
 
-**Example**: "Test the application with various CSV files including edge cases"
+**Examples**:
+- "Test the analyzer with edge cases like single-column CSVs"
+- "Add tests for the new correlation matrix feature"
+- "Test the application with a 50MB CSV file"
 
 ## Development Guidelines
 
