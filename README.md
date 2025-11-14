@@ -13,24 +13,44 @@ Automatic Exploratory Data Analysis for your CSV files. Upload a table and insta
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 🚀 Simple Setup (Recommended)
 
 ```bash
-pip install -r requirements.txt
+# Install dependencies
+make install
+
+# Start the server
+make run
 ```
 
-### 2. Run the Server
+That's it! The app will be available at `http://localhost:8000`
 
-```bash
-cd backend
-uvicorn main:app --reload
-```
+### 📋 Available Make Commands
 
-The app will be available at `http://localhost:8000`
+Run `make help` to see all available commands:
+- `make install` - Install Python dependencies
+- `make run` - Start the development server
+- `make test` - Run tests
+- `make clean` - Clean up cache files
+- `make setup` - Full setup (install dependencies)
 
-### 3. Upload Your CSV
+### 📖 Manual Setup (Alternative)
 
-Open your browser and navigate to `http://localhost:8000`, then drag and drop your CSV file or click to upload.
+If you prefer not to use Make:
+
+1. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run the Server**
+   ```bash
+   cd backend
+   uvicorn main:app --reload
+   ```
+
+3. **Upload Your CSV**
+   Open your browser and navigate to `http://localhost:8000`, then drag and drop your CSV file or click to upload.
 
 ## Project Structure
 
