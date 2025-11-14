@@ -10,21 +10,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-light: #818cf8;
-            --secondary: #8b5cf6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-tertiary: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #cbd5e1;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --shadow: rgba(0, 0, 0, 0.3);
+            /* Shadcn-inspired light theme */
+            --primary: #18181b;
+            --primary-dark: #09090b;
+            --primary-light: #3f3f46;
+            --secondary: #71717a;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #ea580c;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-secondary: #cbd5e1;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.15);
         }
 
         * {
@@ -35,7 +38,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
             min-height: 100vh;
             color: var(--text-primary);
             line-height: 1.6;
@@ -51,8 +54,8 @@
             width: 100%;
             height: 100%;
             background:
-                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
@@ -91,24 +94,23 @@
 
         /* Upload Section */
         .upload-section {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
+            background: var(--bg-primary);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 12px;
             padding: 3rem;
             margin-bottom: 3rem;
-            box-shadow: 0 20px 60px var(--shadow);
+            box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
             animation: fadeInUp 0.8s ease 0.2s both;
         }
 
         .upload-area {
-            border: 2px dashed var(--border);
-            border-radius: 16px;
+            border: 2px dashed var(--border-secondary);
+            border-radius: 8px;
             padding: 4rem 2rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: rgba(15, 23, 42, 0.3);
+            background: var(--bg-secondary);
             position: relative;
             overflow: hidden;
         }
@@ -120,24 +122,24 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: var(--primary);
             opacity: 0;
             transition: opacity 0.3s ease;
         }
 
         .upload-area:hover {
             border-color: var(--primary);
-            transform: translateY(-2px);
+            background: var(--bg-tertiary);
         }
 
         .upload-area:hover::before {
-            opacity: 0.05;
+            opacity: 0.02;
         }
 
         .upload-area.dragover {
             border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.1);
-            transform: scale(1.02);
+            background: var(--bg-tertiary);
+            border-style: solid;
         }
 
         input[type="file"] {
@@ -175,21 +177,21 @@
         .upload-button {
             display: inline-block;
             margin-top: 1.5rem;
-            padding: 0.875rem 2rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 0.625rem 1.5rem;
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px 0 var(--shadow);
         }
 
         .upload-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.4);
+            background: var(--primary-dark);
+            box-shadow: 0 1px 3px 0 var(--shadow);
         }
 
         /* Loading State */
@@ -215,7 +217,7 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            border: 4px solid rgba(99, 102, 241, 0.1);
+            border: 4px solid var(--border);
             border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
@@ -238,14 +240,15 @@
 
         /* Error State */
         .error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-            padding: 1.25rem 1.5rem;
-            border-radius: 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 1rem 1.25rem;
+            border-radius: 6px;
             margin-top: 1.5rem;
             display: none;
             animation: shake 0.5s ease;
+            font-size: 0.875rem;
         }
 
         .error.active {
@@ -270,13 +273,12 @@
 
         /* Overview Card */
         .overview-card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
+            background: var(--bg-primary);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 12px;
             padding: 2.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 40px var(--shadow);
+            box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
         }
 
         .card-title {
@@ -296,16 +298,16 @@
         }
 
         .stat-box {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: var(--primary);
             padding: 2rem;
-            border-radius: 16px;
+            border-radius: 8px;
             text-align: center;
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
         }
 
         .stat-box:hover {
-            transform: translateY(-4px);
+            box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
         }
 
         .stat-value {
@@ -325,19 +327,18 @@
 
         /* Column Cards */
         .column-card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
+            background: var(--bg-primary);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 12px;
             padding: 2.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 40px var(--shadow);
-            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
+            transition: all 0.2s ease;
         }
 
         .column-card:hover {
-            border-color: var(--primary);
-            box-shadow: 0 15px 50px var(--shadow);
+            border-color: var(--border-secondary);
+            box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
         }
 
         .column-header {
@@ -356,14 +357,15 @@
         }
 
         .column-type {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            padding: 0.5rem 1.25rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 0.375rem 0.875rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            border: 1px solid var(--border);
         }
 
         .stats-grid {
@@ -374,16 +376,16 @@
         }
 
         .stat-item {
-            background: rgba(15, 23, 42, 0.5);
+            background: var(--bg-secondary);
             padding: 1.25rem;
-            border-radius: 12px;
+            border-radius: 8px;
             border: 1px solid var(--border);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .stat-item:hover {
-            background: rgba(99, 102, 241, 0.05);
-            border-color: var(--primary);
+            background: var(--bg-tertiary);
+            border-color: var(--border-secondary);
         }
 
         .stat-item-label {
@@ -403,8 +405,8 @@
 
         .plot-container {
             margin-top: 2rem;
-            background: rgba(15, 23, 42, 0.3);
-            border-radius: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
             padding: 1.5rem;
             border: 1px solid var(--border);
         }
@@ -475,16 +477,16 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
+            background: var(--bg-secondary);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--bg-tertiary);
+            background: var(--border-secondary);
             border-radius: 6px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary);
+            background: var(--secondary);
         }
     </style>
 </head>
@@ -714,18 +716,20 @@
                         paper_bgcolor: 'rgba(0,0,0,0)',
                         plot_bgcolor: 'rgba(0,0,0,0)',
                         font: {
-                            color: '#f1f5f9',
+                            color: '#0f172a',
                             family: 'Inter, sans-serif'
                         },
                         xaxis: {
                             ...(plotData.layout.xaxis || {}),
-                            gridcolor: '#334155',
-                            color: '#f1f5f9'
+                            gridcolor: '#e2e8f0',
+                            color: '#0f172a',
+                            zerolinecolor: '#cbd5e1'
                         },
                         yaxis: {
                             ...(plotData.layout.yaxis || {}),
-                            gridcolor: '#334155',
-                            color: '#f1f5f9'
+                            gridcolor: '#e2e8f0',
+                            color: '#0f172a',
+                            zerolinecolor: '#cbd5e1'
                         }
                     };
 
@@ -738,12 +742,12 @@
                             displaylogo: false
                         }).catch(err => {
                             console.error(`Failed to render plot for ${name}:`, err);
-                            plotDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 2rem;">Chart unavailable</p>';
+                            plotDiv.innerHTML = '<p style="color: #64748b; text-align: center; padding: 2rem;">Chart unavailable</p>';
                         });
                     }, 100);
                 } catch (err) {
                     console.error(`Error processing plot for ${name}:`, err);
-                    plotDiv.innerHTML = '<p style="color: #94a3b8; text-align: center; padding: 2rem;">Chart unavailable</p>';
+                    plotDiv.innerHTML = '<p style="color: #64748b; text-align: center; padding: 2rem;">Chart unavailable</p>';
                 }
             }
 
