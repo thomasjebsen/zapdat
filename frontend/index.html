@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table EDA Analyzer</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #f8f9ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .overview-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .overview-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .column-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .column-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .column-type {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .stat-item-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-item-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .plot-container {
+            margin-top: 20px;
+            min-height: 400px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Table EDA Analyzer</h1>
+            <p class="subtitle">Upload a CSV file and get instant insights</p>
+        </header>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">Click to upload or drag and drop</div>
+                <div class="upload-hint">CSV files only</div>
+                <input type="file" id="fileInput" accept=".csv">
+            </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your data...</p>
+            </div>
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="overview-card">
+                <h2>Dataset Overview</h2>
+                <div class="overview-stats" id="overviewStats"></div>
+            </div>
+            <div id="columnAnalysis"></div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+
+        // Click to upload
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) handleFile(file);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleFile(file);
+        });
+
+        async function handleFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                showError('Please upload a CSV file');
+                return;
+            }
+
+            errorDiv.classList.remove('active');
+            results.classList.remove('active');
+            loading.classList.add('active');
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://localhost:8000/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                displayResults(data.analysis);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+
+        function displayResults(analysis) {
+            results.classList.add('active');
+
+            // Display overview
+            const overview = analysis.overview;
+            const overviewStats = document.getElementById('overviewStats');
+            overviewStats.innerHTML = `
+                <div class="stat-box">
+                    <div class="stat-value">${overview.rows.toLocaleString()}</div>
+                    <div class="stat-label">Rows</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${overview.columns}</div>
+                    <div class="stat-label">Columns</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">${overview.duplicates.toLocaleString()}</div>
+                    <div class="stat-label">Duplicate Rows</div>
+                </div>
+            `;
+
+            // Display column analysis
+            const columnAnalysis = document.getElementById('columnAnalysis');
+            columnAnalysis.innerHTML = '';
+
+            for (const [columnName, columnData] of Object.entries(analysis.columns)) {
+                const card = createColumnCard(columnName, columnData);
+                columnAnalysis.appendChild(card);
+            }
+        }
+
+        function createColumnCard(name, data) {
+            const card = document.createElement('div');
+            card.className = 'column-card';
+
+            const header = `
+                <div class="column-header">
+                    <div class="column-name">${name}</div>
+                    <div class="column-type">${data.type}</div>
+                </div>
+            `;
+
+            let statsHtml = '';
+            if (data.analysis && data.analysis.stats) {
+                const stats = data.analysis.stats;
+                statsHtml = '<div class="stats-grid">';
+
+                for (const [key, value] of Object.entries(stats)) {
+                    const displayValue = typeof value === 'number' ?
+                        (Number.isInteger(value) ? value.toLocaleString() : value.toFixed(2)) :
+                        value;
+                    statsHtml += `
+                        <div class="stat-item">
+                            <div class="stat-item-label">${key}</div>
+                            <div class="stat-item-value">${displayValue}</div>
+                        </div>
+                    `;
+                }
+
+                statsHtml += '</div>';
+            }
+
+            card.innerHTML = header + statsHtml;
+
+            // Add plot if available
+            if (data.analysis && data.analysis.plot) {
+                const plotDiv = document.createElement('div');
+                plotDiv.className = 'plot-container';
+                plotDiv.id = `plot-${name.replace(/\s+/g, '-')}`;
+                card.appendChild(plotDiv);
+
+                // Render plot
+                const plotData = JSON.parse(data.analysis.plot);
+                Plotly.newPlot(plotDiv.id, plotData.data, plotData.layout, {responsive: true});
+            }
+
+            return card;
+        }
+    </script>
+</body>
+</html>
