@@ -437,6 +437,17 @@
             }
         }
 
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -622,17 +633,47 @@
         }
 
         .custom-chart-container {
-            display: none;
+            margin-top: 2rem;
+        }
+
+        .chart-item {
             background: rgba(15, 23, 42, 0.3);
             border-radius: 16px;
             padding: 1.5rem;
             border: 1px solid var(--border);
-            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.4s ease;
         }
 
-        .custom-chart-container.active {
-            display: block;
-            animation: fadeInUp 0.4s ease;
+        .chart-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chart-item-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-item-delete {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .chart-item-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
         }
 
         .color-schemes {
@@ -693,17 +734,6 @@
             <div class="error" id="error"></div>
         </div>
 
-        <div class="results" id="results">
-            <div class="overview-card">
-                <h2 class="card-title">
-                    <span>📋</span>
-                    Dataset Overview
-                </h2>
-                <div class="overview-stats" id="overviewStats"></div>
-            </div>
-            <div id="columnAnalysis"></div>
-        </div>
-
         <div class="chart-builder" id="chartBuilder">
             <div class="builder-card">
                 <h2 class="card-title">
@@ -758,6 +788,17 @@
 
                 <div class="custom-chart-container" id="customChartContainer"></div>
             </div>
+        </div>
+
+        <div class="results" id="results">
+            <div class="overview-card">
+                <h2 class="card-title">
+                    <span>📋</span>
+                    Dataset Overview
+                </h2>
+                <div class="overview-stats" id="overviewStats"></div>
+            </div>
+            <div id="columnAnalysis"></div>
         </div>
     </div>
 
@@ -1024,7 +1065,7 @@
                     // Update selected chart type
                     selectedChartType = btn.dataset.type;
 
-                    // Generate form fields
+                    // Generate form fields (this will reset the form)
                     generateChartOptions(selectedChartType);
 
                     // Enable generate button
@@ -1032,8 +1073,11 @@
                 });
             });
 
-            // Generate chart button
-            document.getElementById('generateChart').addEventListener('click', generateCustomChart);
+            // Generate chart button - remove old listener and add new one
+            const generateBtn = document.getElementById('generateChart');
+            const newGenerateBtn = generateBtn.cloneNode(true);
+            generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
+            newGenerateBtn.addEventListener('click', generateCustomChart);
         }
 
         function generateChartOptions(chartType) {
@@ -1207,11 +1251,27 @@
 
                 const data = await response.json();
 
-                // Display chart
-                chartContainer.innerHTML = '';
-                chartContainer.classList.add('active');
-                chartContainer.id = `custom-chart-${Date.now()}`;
+                // Create new chart item
+                const chartId = `chart-${Date.now()}`;
+                const chartItem = document.createElement('div');
+                chartItem.className = 'chart-item';
+                chartItem.id = `item-${chartId}`;
 
+                // Get chart title from payload or use default
+                const chartTitle = payload.title || getDefaultChartTitle(selectedChartType, payload);
+
+                chartItem.innerHTML = `
+                    <div class="chart-item-header">
+                        <div class="chart-item-title">${getChartTypeEmoji(selectedChartType)} ${chartTitle}</div>
+                        <button class="chart-item-delete" onclick="deleteChart('item-${chartId}')">🗑️ Delete</button>
+                    </div>
+                    <div id="${chartId}"></div>
+                `;
+
+                // Prepend chart (newest first)
+                chartContainer.insertBefore(chartItem, chartContainer.firstChild);
+
+                // Render plot
                 const plotData = JSON.parse(data.chart);
                 const layout = {
                     ...plotData.layout,
@@ -1233,21 +1293,63 @@
                     }
                 };
 
-                Plotly.newPlot(chartContainer, plotData.data, layout, {
-                    responsive: true,
-                    displayModeBar: true,
-                    displaylogo: false
-                });
+                setTimeout(() => {
+                    Plotly.newPlot(chartId, plotData.data, layout, {
+                        responsive: true,
+                        displayModeBar: true,
+                        displaylogo: false
+                    });
+                }, 100);
 
-                // Scroll to chart
-                chartContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Scroll to new chart
+                chartItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
             } catch (error) {
                 showError(error.message);
-                chartContainer.classList.remove('active');
             } finally {
                 generateBtn.disabled = false;
                 generateBtn.innerHTML = '<span>✨</span><span>Generate Chart</span>';
+            }
+        }
+
+        function getChartTypeEmoji(chartType) {
+            const emojis = {
+                'scatter': '📊',
+                'line': '📈',
+                'box': '📦',
+                'violin': '🎻',
+                'correlation': '🔥',
+                'pie': '🥧',
+                'bar': '📊'
+            };
+            return emojis[chartType] || '📊';
+        }
+
+        function getDefaultChartTitle(chartType, payload) {
+            switch (chartType) {
+                case 'scatter':
+                    return `${payload.y_column} vs ${payload.x_column}`;
+                case 'line':
+                    return `${payload.y_columns.join(', ')} over ${payload.x_column}`;
+                case 'box':
+                case 'violin':
+                    return `Distribution of ${payload.columns.join(', ')}`;
+                case 'correlation':
+                    return 'Correlation Heatmap';
+                case 'pie':
+                    return `${payload.x_column} Distribution`;
+                case 'bar':
+                    return `${payload.y_column} by ${payload.x_column}`;
+                default:
+                    return 'Custom Chart';
+            }
+        }
+
+        function deleteChart(chartItemId) {
+            const chartItem = document.getElementById(chartItemId);
+            if (chartItem) {
+                chartItem.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => chartItem.remove(), 300);
             }
         }
     </script>
