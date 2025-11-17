@@ -103,6 +103,125 @@
             animation: fadeInUp 0.8s ease 0.2s both;
         }
 
+        /* Tab switcher */
+        .input-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            box-shadow: 0 1px 3px 0 var(--shadow);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Paste area */
+        .paste-area {
+            border: 2px solid var(--border-secondary);
+            border-radius: 8px;
+            padding: 1rem;
+            background: var(--bg-secondary);
+        }
+
+        .paste-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .paste-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .paste-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .paste-hint {
+            margin-top: 1rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .paste-controls {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .delimiter-select {
+            padding: 0.625rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .analyze-btn {
+            padding: 0.625rem 2rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px 0 var(--shadow);
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            background: var(--primary-dark);
+            box-shadow: 0 1px 3px 0 var(--shadow);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .upload-area {
             border: 2px dashed var(--border-secondary);
             border-radius: 8px;
@@ -715,14 +834,49 @@
         </header>
 
         <div class="upload-section">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-content">
-                    <div class="upload-icon">📊</div>
-                    <div class="upload-text">Drop your CSV file here</div>
-                    <div class="upload-hint">or click to browse</div>
-                    <button class="upload-button">Choose File</button>
+            <!-- Tab Switcher -->
+            <div class="input-tabs">
+                <button class="tab-btn active" data-tab="upload">📁 Upload File</button>
+                <button class="tab-btn" data-tab="paste">📋 Paste Data</button>
+            </div>
+
+            <!-- Upload Tab -->
+            <div class="tab-content active" id="uploadTab">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <div class="upload-icon">📊</div>
+                        <div class="upload-text">Drop your CSV file here</div>
+                        <div class="upload-hint">or click to browse</div>
+                        <button class="upload-button">Choose File</button>
+                    </div>
+                    <input type="file" id="fileInput" accept=".csv">
                 </div>
-                <input type="file" id="fileInput" accept=".csv">
+            </div>
+
+            <!-- Paste Tab -->
+            <div class="tab-content" id="pasteTab">
+                <div class="paste-area">
+                    <textarea
+                        id="pasteTextarea"
+                        class="paste-textarea"
+                        placeholder="Paste your data here...&#10;&#10;Supported formats:&#10;• CSV (comma-separated)&#10;• TSV (tab-separated)&#10;• Other delimiters (;, |)&#10;&#10;Example:&#10;Name,Age,City&#10;Alice,30,NYC&#10;Bob,25,LA"></textarea>
+
+                    <div class="paste-hint">
+                        💡 Tip: Paste data from Excel, Google Sheets, or any CSV/TSV source
+                    </div>
+
+                    <div class="paste-controls">
+                        <label for="delimiterSelect" style="color: var(--text-secondary); font-size: 0.875rem;">Delimiter:</label>
+                        <select id="delimiterSelect" class="delimiter-select">
+                            <option value="auto">Auto-detect</option>
+                            <option value=",">Comma (,)</option>
+                            <option value="\t">Tab (\t)</option>
+                            <option value=";">Semicolon (;)</option>
+                            <option value="|">Pipe (|)</option>
+                        </select>
+                        <button id="analyzeBtn" class="analyze-btn">🔍 Analyze Data</button>
+                    </div>
+                </div>
             </div>
 
             <div class="loading" id="loading">
@@ -811,11 +965,93 @@
         const results = document.getElementById('results');
         const errorDiv = document.getElementById('error');
         const uploadButton = document.querySelector('.upload-button');
+        const pasteTextarea = document.getElementById('pasteTextarea');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const delimiterSelect = document.getElementById('delimiterSelect');
 
         // Chart builder state
         let currentCacheKey = null;
         let columnInfo = null;
         let selectedChartType = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+
+                // Update button states
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+
+                if (tabName === 'upload') {
+                    document.getElementById('uploadTab').classList.add('active');
+                } else if (tabName === 'paste') {
+                    document.getElementById('pasteTab').classList.add('active');
+                    pasteTextarea.focus();
+                }
+            });
+        });
+
+        // Paste data analysis
+        analyzeBtn.addEventListener('click', async () => {
+            const pastedData = pasteTextarea.value.trim();
+
+            if (!pastedData) {
+                showError('Please paste some data first');
+                return;
+            }
+
+            errorDiv.classList.remove('active');
+            results.classList.remove('active');
+            loading.classList.add('active');
+
+            try {
+                // Get delimiter (convert 'auto' to null for backend auto-detection)
+                const delimiter = delimiterSelect.value === 'auto' ? null : delimiterSelect.value;
+
+                const response = await fetch('http://localhost:8000/analyze_text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data: pastedData,
+                        delimiter: delimiter
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                displayResults(data.analysis);
+
+                // Store cache key and load chart builder
+                if (data.cache_key) {
+                    currentCacheKey = data.cache_key;
+                    await loadChartBuilder();
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+        });
+
+        // Allow Ctrl+Enter or Cmd+Enter to analyze
+        pasteTextarea.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                analyzeBtn.click();
+            }
+        });
 
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
