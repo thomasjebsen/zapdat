@@ -409,6 +409,67 @@
             border-radius: 8px;
             padding: 1.5rem;
             border: 1px solid var(--border);
+            min-height: 400px;
+        }
+
+        /* Collapsible sections */
+        .collapsible-section {
+            margin-top: 1.5rem;
+        }
+
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .collapsible-header:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        .collapsible-header h4 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .collapsible-icon {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+
+        .collapsible-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible-content.expanded {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .collapsible-content-inner {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 8px 8px;
         }
 
         /* Animations */
@@ -666,7 +727,6 @@
             let statsHtml = '';
             if (data.analysis && data.analysis.stats) {
                 const stats = data.analysis.stats;
-                statsHtml = '<div class="stats-grid">';
 
                 // Format stat labels to be more readable
                 const formatLabel = (key) => {
@@ -678,69 +738,167 @@
                         .replace(/Q75/g, '75th Percentile');
                 };
 
-                for (const [key, value] of Object.entries(stats)) {
-                    let displayValue;
+                const formatValue = (value) => {
                     if (value === null || value === undefined) {
-                        displayValue = 'N/A';
+                        return 'N/A';
                     } else if (typeof value === 'number') {
-                        displayValue = Number.isInteger(value) ?
+                        return Number.isInteger(value) ?
                             value.toLocaleString() :
                             value.toFixed(2);
                     } else {
-                        displayValue = value;
+                        return value;
                     }
+                };
 
+                // Define basic stats by type
+                const basicNumericStats = ['count', 'mean', 'median', 'min', 'max', 'missing'];
+                const advancedNumericStats = ['std', 'q25', 'q75', 'outliers', 'outlier_pct', 'skewness', 'distribution_shape', 'zeros', 'negatives', 'typical_min', 'typical_max'];
+                const basicCategoricalStats = ['count', 'unique', 'mode', 'mode_pct', 'missing', 'diversity'];
+                const basicTextStats = ['count', 'unique', 'missing', 'pattern_hint'];
+                const advancedTextStats = ['avg_length', 'min_length', 'max_length'];
+
+                // Determine which stats to show in main grid
+                let mainStats = {};
+                let advancedStats = {};
+
+                if (data.type === 'numeric') {
+                    for (const [key, value] of Object.entries(stats)) {
+                        if (basicNumericStats.includes(key)) {
+                            mainStats[key] = value;
+                        } else if (advancedNumericStats.includes(key)) {
+                            advancedStats[key] = value;
+                        }
+                    }
+                } else if (data.type === 'categorical') {
+                    for (const [key, value] of Object.entries(stats)) {
+                        if (basicCategoricalStats.includes(key)) {
+                            mainStats[key] = value;
+                        }
+                    }
+                } else if (data.type === 'text') {
+                    for (const [key, value] of Object.entries(stats)) {
+                        if (basicTextStats.includes(key)) {
+                            mainStats[key] = value;
+                        } else if (advancedTextStats.includes(key)) {
+                            advancedStats[key] = value;
+                        }
+                    }
+                } else {
+                    mainStats = stats;
+                }
+
+                // Display main stats
+                statsHtml = '<div class="stats-grid">';
+                for (const [key, value] of Object.entries(mainStats)) {
                     statsHtml += `
                         <div class="stat-item">
                             <div class="stat-item-label">${formatLabel(key)}</div>
-                            <div class="stat-item-value">${displayValue}</div>
+                            <div class="stat-item-value">${formatValue(value)}</div>
                         </div>
                     `;
                 }
-
                 statsHtml += '</div>';
+
+                // Add advanced stats in collapsible section if present
+                if (Object.keys(advancedStats).length > 0) {
+                    const sectionId = `advanced-${name.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}`;
+                    statsHtml += `
+                        <div class="collapsible-section">
+                            <div class="collapsible-header" onclick="toggleCollapsible('${sectionId}')">
+                                <h4>📊 Advanced Statistics</h4>
+                                <span class="collapsible-icon" id="${sectionId}-icon">▼</span>
+                            </div>
+                            <div class="collapsible-content" id="${sectionId}">
+                                <div class="collapsible-content-inner">
+                                    <div class="stats-grid">
+                    `;
+                    for (const [key, value] of Object.entries(advancedStats)) {
+                        statsHtml += `
+                            <div class="stat-item">
+                                <div class="stat-item-label">${formatLabel(key)}</div>
+                                <div class="stat-item-value">${formatValue(value)}</div>
+                            </div>
+                        `;
+                    }
+                    statsHtml += `
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             }
 
-            // Add value counts table for categorical data
+            // Add value counts table for categorical data (collapsible)
             let valueCountsHtml = '';
             if (data.analysis && data.analysis.value_counts) {
                 const counts = data.analysis.value_counts;
                 const remaining = data.analysis.remaining_categories || 0;
                 const totalCount = data.analysis.stats ? data.analysis.stats.count : 0;
+                const sectionId = `values-${name.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}`;
 
-                valueCountsHtml = '<div style="margin-top: 1rem;"><h4 style="color: #1e293b; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Category Counts</h4>';
-                valueCountsHtml += '<div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 0.375rem; padding: 0.5rem;">';
-                valueCountsHtml += '<table style="width: 100%; font-size: 0.85rem;">';
+                valueCountsHtml = `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" onclick="toggleCollapsible('${sectionId}')">
+                            <h4>📋 Category Breakdown (${Object.keys(counts).length} shown${remaining > 0 ? `, +${remaining} more` : ''})</h4>
+                            <span class="collapsible-icon" id="${sectionId}-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="${sectionId}">
+                            <div class="collapsible-content-inner">
+                                <table style="width: 100%; font-size: 0.85rem;">
+                                    <thead>
+                                        <tr style="border-bottom: 2px solid var(--border);">
+                                            <th style="padding: 0.5rem; text-align: left; color: var(--text-muted); font-weight: 600;">Category</th>
+                                            <th style="padding: 0.5rem; text-align: right; color: var(--text-muted); font-weight: 600;">Count</th>
+                                            <th style="padding: 0.5rem; text-align: right; color: var(--text-muted); font-weight: 600;">%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                `;
 
                 for (const [category, count] of Object.entries(counts)) {
                     const percentage = totalCount > 0 ? ((count / totalCount) * 100).toFixed(1) : '0';
                     valueCountsHtml += `
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                            <td style="padding: 0.4rem; color: #475569;">${category}</td>
-                            <td style="padding: 0.4rem; text-align: right; font-weight: 500; color: #1e293b;">${count.toLocaleString()}</td>
-                            <td style="padding: 0.4rem; text-align: right; color: #64748b;">${percentage}%</td>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 0.5rem; color: var(--text-primary);">${category}</td>
+                            <td style="padding: 0.5rem; text-align: right; font-weight: 500; color: var(--text-primary);">${count.toLocaleString()}</td>
+                            <td style="padding: 0.5rem; text-align: right; color: var(--text-secondary);">${percentage}%</td>
                         </tr>
                     `;
                 }
 
-                valueCountsHtml += '</table>';
-                if (remaining > 0) {
-                    valueCountsHtml += `<div style="padding: 0.5rem; color: #64748b; font-style: italic; font-size: 0.85rem;">+ ${remaining} more categories</div>`;
-                }
-                valueCountsHtml += '</div></div>';
+                valueCountsHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
 
-            // Add samples for text data
+            // Add samples for text data (collapsible)
             let samplesHtml = '';
             if (data.analysis && data.analysis.samples && data.analysis.samples.length > 0) {
-                samplesHtml = '<div style="margin-top: 1rem;"><h4 style="color: #1e293b; font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 600;">Sample Values</h4>';
-                samplesHtml += '<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.375rem; padding: 0.75rem; font-size: 0.85rem; color: #475569;">';
+                const sectionId = `samples-${name.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}`;
+                samplesHtml = `
+                    <div class="collapsible-section">
+                        <div class="collapsible-header" onclick="toggleCollapsible('${sectionId}')">
+                            <h4>📝 Sample Values (${data.analysis.samples.length})</h4>
+                            <span class="collapsible-icon" id="${sectionId}-icon">▼</span>
+                        </div>
+                        <div class="collapsible-content" id="${sectionId}">
+                            <div class="collapsible-content-inner">
+                `;
 
                 data.analysis.samples.forEach((sample, idx) => {
-                    samplesHtml += `<div style="padding: 0.25rem 0; ${idx < data.analysis.samples.length - 1 ? 'border-bottom: 1px solid #e2e8f0;' : ''}">${sample}</div>`;
+                    samplesHtml += `<div style="padding: 0.5rem; ${idx < data.analysis.samples.length - 1 ? 'border-bottom: 1px solid var(--border);' : ''} color: var(--text-primary); font-family: monospace; font-size: 0.85rem;">${sample}</div>`;
                 });
 
-                samplesHtml += '</div></div>';
+                samplesHtml += `
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
 
             card.innerHTML = header + statsHtml + valueCountsHtml + samplesHtml;
@@ -804,6 +962,20 @@
             }
 
             return card;
+        }
+
+        // Toggle collapsible sections
+        function toggleCollapsible(sectionId) {
+            const content = document.getElementById(sectionId);
+            const icon = document.getElementById(`${sectionId}-icon`);
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                icon.classList.add('expanded');
+            }
         }
     </script>
 </body>
