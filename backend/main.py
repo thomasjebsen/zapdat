@@ -1,13 +1,14 @@
 """
 FastAPI backend for Table EDA Analyzer
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import pandas as pd
 from io import StringIO
 from analyzer import TableAnalyzer
+from llm_insights import DatasetInsightGenerator
 
 app = FastAPI(title="Table EDA Analyzer")
 
@@ -19,6 +20,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize LLM insight generator (lazy loading)
+insight_generator = None
 
 
 @app.get("/")
@@ -68,3 +72,36 @@ async def analyze_csv(file: UploadFile = File(...)):
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+
+@app.post("/insights")
+async def generate_insights(analysis: dict = Body(...)):
+    """
+    Generate AI insights about the dataset based on analysis results
+
+    Args:
+        analysis: The analysis dictionary from /analyze endpoint
+
+    Returns:
+        JSON with AI-generated insights
+    """
+    global insight_generator
+
+    try:
+        # Initialize the generator on first use
+        if insight_generator is None:
+            insight_generator = DatasetInsightGenerator()
+
+        # Generate insight
+        insight_text = insight_generator.generate_insight(analysis)
+
+        return {
+            "status": "success",
+            "insight": insight_text
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating insights: {str(e)}"
+        )

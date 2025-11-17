@@ -488,6 +488,127 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--secondary);
         }
+
+        /* AI Insights */
+        .insights-section {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            display: none;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .insights-section.active {
+            display: block;
+        }
+
+        .insights-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .insights-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .insights-badge {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .insights-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .insights-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+
+        .insights-toggle label {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .insights-content {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid #bae6fd;
+            display: none;
+        }
+
+        .insights-content.active {
+            display: block;
+        }
+
+        .insights-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            position: relative;
+        }
+
+        .insights-text::before {
+            content: '💡';
+            font-size: 2rem;
+            position: absolute;
+            left: -3rem;
+            top: -0.25rem;
+            opacity: 0.3;
+        }
+
+        .insights-loading {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 2rem;
+            font-style: italic;
+        }
+
+        .insights-error {
+            color: #dc2626;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .privacy-note {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #92400e;
+            display: flex;
+            align-items: start;
+            gap: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -527,6 +648,30 @@
                 </h2>
                 <div class="overview-stats" id="overviewStats"></div>
             </div>
+
+            <!-- AI Insights Section -->
+            <div class="insights-section" id="insightsSection">
+                <div class="insights-header">
+                    <div class="insights-title">
+                        <span>🤖</span>
+                        AI Dataset Insights
+                        <span class="insights-badge">Local LLM</span>
+                    </div>
+                    <div class="insights-toggle">
+                        <input type="checkbox" id="insightsCheckbox">
+                        <label for="insightsCheckbox">Generate AI insights about this dataset</label>
+                    </div>
+                </div>
+                <div class="privacy-note">
+                    <span>🔒</span>
+                    <div>
+                        <strong>Privacy First:</strong> Analysis runs on a local AI model (Qwen 2.5 0.5B) on your machine.
+                        No data is sent to external servers or APIs.
+                    </div>
+                </div>
+                <div class="insights-content" id="insightsContent"></div>
+            </div>
+
             <div id="columnAnalysis"></div>
         </div>
     </div>
@@ -538,6 +683,12 @@
         const results = document.getElementById('results');
         const errorDiv = document.getElementById('error');
         const uploadButton = document.querySelector('.upload-button');
+        const insightsSection = document.getElementById('insightsSection');
+        const insightsCheckbox = document.getElementById('insightsCheckbox');
+        const insightsContent = document.getElementById('insightsContent');
+
+        // Store current analysis data
+        let currentAnalysis = null;
 
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -593,6 +744,7 @@
                 }
 
                 const data = await response.json();
+                currentAnalysis = data.analysis;
                 displayResults(data.analysis);
             } catch (error) {
                 showError(error.message);
@@ -601,6 +753,41 @@
             }
         }
 
+        // AI Insights handler
+        insightsCheckbox.addEventListener('change', async (e) => {
+            if (!currentAnalysis) return;
+
+            if (e.target.checked) {
+                // Show loading state
+                insightsContent.innerHTML = '<div class="insights-loading">🤔 Analyzing dataset with local AI model...</div>';
+                insightsContent.classList.add('active');
+
+                try {
+                    const response = await fetch('http://localhost:8000/insights', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(currentAnalysis)
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.detail || 'Failed to generate insights');
+                    }
+
+                    const data = await response.json();
+                    insightsContent.innerHTML = `<div class="insights-text">${data.insight}</div>`;
+                } catch (error) {
+                    insightsContent.innerHTML = `<div class="insights-error">⚠️ ${error.message}</div>`;
+                }
+            } else {
+                // Hide insights when unchecked
+                insightsContent.classList.remove('active');
+                insightsContent.innerHTML = '';
+            }
+        });
+
         function showError(message) {
             errorDiv.textContent = '⚠️ ' + message;
             errorDiv.classList.add('active');
@@ -608,6 +795,10 @@
 
         function displayResults(analysis) {
             results.classList.add('active');
+            insightsSection.classList.add('active');
+            insightsCheckbox.checked = false;
+            insightsContent.classList.remove('active');
+            insightsContent.innerHTML = '';
             results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
             // Display overview
