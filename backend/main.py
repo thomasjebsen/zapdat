@@ -39,19 +39,34 @@ async def analyze_csv(file: UploadFile = File(...)):
     """
     Upload a CSV file and get automatic EDA analysis
     """
+    import logging
+    logger = logging.getLogger("uvicorn")
+
+    logger.info(f"Received file: {file.filename}, content_type: {file.content_type}")
+
     # Validate file type
     if not file.filename.endswith('.csv'):
+        logger.warning(f"Rejected non-CSV file: {file.filename}")
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
 
     try:
         # Read CSV file
         contents = await file.read()
+        logger.info(f"Read {len(contents)} bytes from {file.filename}")
+
+        if len(contents) == 0:
+            logger.warning(f"Empty file uploaded: {file.filename}")
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
         csv_string = contents.decode('utf-8')
         df = pd.read_csv(StringIO(csv_string))
 
         # Check if dataframe is empty
         if df.empty:
+            logger.warning(f"CSV parsed but dataframe is empty: {file.filename}")
             raise HTTPException(status_code=400, detail="CSV file is empty")
+
+        logger.info(f"Successfully parsed CSV: {file.filename}, shape: {df.shape}")
 
         # Store dataframe in cache with filename as key
         cache_key = file.filename
@@ -61,6 +76,8 @@ async def analyze_csv(file: UploadFile = File(...)):
         analyzer = TableAnalyzer(df)
         analysis = analyzer.analyze_all()
 
+        logger.info(f"Analysis complete for {file.filename}")
+
         return {
             "status": "success",
             "filename": file.filename,
@@ -69,10 +86,16 @@ async def analyze_csv(file: UploadFile = File(...)):
         }
 
     except pd.errors.EmptyDataError:
+        logger.error(f"EmptyDataError for {file.filename}")
         raise HTTPException(status_code=400, detail="CSV file is empty or invalid")
     except pd.errors.ParserError as e:
+        logger.error(f"ParserError for {file.filename}: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error parsing CSV: {str(e)}")
+    except UnicodeDecodeError as e:
+        logger.error(f"UnicodeDecodeError for {file.filename}: {str(e)}")
+        raise HTTPException(status_code=400, detail="File encoding error. Please ensure the file is UTF-8 encoded.")
     except Exception as e:
+        logger.error(f"Unexpected error analyzing {file.filename}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error analyzing file: {str(e)}")
 
 
