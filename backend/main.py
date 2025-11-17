@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from analyzer import TableAnalyzer
 from visualizations import ChartGenerator
+from file_reader import MultiFormatReader, FileFormatError
 
 app = FastAPI(title="Table EDA Analyzer")
 
@@ -37,21 +38,25 @@ async def root():
 
 
 @app.post("/analyze")
-async def analyze_csv(file: UploadFile = File(...)):
+async def analyze_file(file: UploadFile = File(...)):
     """
-    Upload a CSV file and get automatic EDA analysis
+    Upload a data file and get automatic EDA analysis
+    Supports: CSV, Excel, JSON, TSV, Parquet, Feather, Pickle, SQLite, HDF5, ORC
     """
     logger = logging.getLogger("uvicorn")
 
     logger.info(f"Received file: {file.filename}, content_type: {file.content_type}")
 
     # Validate file type
-    if not file.filename.endswith('.csv'):
-        logger.warning(f"Rejected non-CSV file: {file.filename}")
-        raise HTTPException(status_code=400, detail="Only CSV files are supported")
+    if not MultiFormatReader.is_supported(file.filename):
+        supported = ", ".join(MultiFormatReader.get_supported_formats())
+        logger.warning(f"Rejected unsupported file: {file.filename}")
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported file format. Supported formats: {supported}"
+        )
 
     try:
-        # Read CSV file
+        # Read file content
         contents = await file.read()
         logger.info(f"Read {len(contents)} bytes from {file.filename}")
 
@@ -59,15 +64,15 @@ async def analyze_csv(file: UploadFile = File(...)):
             logger.warning(f"Empty file uploaded: {file.filename}")
             raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
-        csv_string = contents.decode('utf-8')
-        df = pd.read_csv(StringIO(csv_string))
+        # Parse file using MultiFormatReader
+        df = MultiFormatReader.read_file(contents, file.filename)
 
         # Check if dataframe is empty
         if df.empty:
-            logger.warning(f"CSV parsed but dataframe is empty: {file.filename}")
-            raise HTTPException(status_code=400, detail="CSV file is empty")
+            logger.warning(f"File parsed but dataframe is empty: {file.filename}")
+            raise HTTPException(status_code=400, detail="File is empty or contains no data")
 
-        logger.info(f"Successfully parsed CSV: {file.filename}, shape: {df.shape}")
+        logger.info(f"Successfully parsed {file.filename}, shape: {df.shape}")
 
         # Store dataframe in cache with filename as key
         cache_key = file.filename
@@ -83,15 +88,19 @@ async def analyze_csv(file: UploadFile = File(...)):
             "status": "success",
             "filename": file.filename,
             "cache_key": cache_key,
+            "file_format": MultiFormatReader.detect_format(file.filename),
             "analysis": analysis
         }
 
+    except FileFormatError as e:
+        logger.error(f"FileFormatError for {file.filename}: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
     except pd.errors.EmptyDataError:
         logger.error(f"EmptyDataError for {file.filename}")
-        raise HTTPException(status_code=400, detail="CSV file is empty or invalid")
+        raise HTTPException(status_code=400, detail="File is empty or invalid")
     except pd.errors.ParserError as e:
         logger.error(f"ParserError for {file.filename}: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error parsing CSV: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error parsing file: {str(e)}")
     except UnicodeDecodeError as e:
         logger.error(f"UnicodeDecodeError for {file.filename}: {str(e)}")
         raise HTTPException(
@@ -273,6 +282,32 @@ async def get_column_info(cache_key: str):
         "numeric_columns": numeric_columns,
         "categorical_columns": categorical_columns,
         "column_types": analyzer.column_types
+    }
+
+
+@app.get("/supported_formats")
+async def get_supported_formats():
+    """Get list of supported file formats"""
+    return {
+        "formats": MultiFormatReader.get_supported_formats(),
+        "descriptions": {
+            ".csv": "Comma-Separated Values",
+            ".tsv": "Tab-Separated Values",
+            ".txt": "Text file (auto-detect delimiter)",
+            ".xlsx": "Excel 2007+ (OpenXML)",
+            ".xls": "Excel 97-2003",
+            ".json": "JavaScript Object Notation",
+            ".parquet": "Apache Parquet (columnar)",
+            ".feather": "Apache Arrow Feather",
+            ".pkl": "Python Pickle",
+            ".pickle": "Python Pickle",
+            ".db": "SQLite Database",
+            ".sqlite": "SQLite Database",
+            ".sqlite3": "SQLite Database",
+            ".h5": "HDF5 (Hierarchical Data Format)",
+            ".hdf5": "HDF5 (Hierarchical Data Format)",
+            ".orc": "Apache ORC (Optimized Row Columnar)"
+        }
     }
 
 
