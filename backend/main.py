@@ -86,6 +86,70 @@ async def analyze_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error analyzing file: {str(e)}")
 
 
+class PasteDataRequest(BaseModel):
+    data: str
+    delimiter: Optional[str] = None  # auto-detect if None
+
+
+@app.post("/analyze_text")
+async def analyze_pasted_data(request: PasteDataRequest):
+    """
+    Analyze pasted CSV/TSV data
+    """
+    try:
+        # Validate data is not empty
+        if not request.data or not request.data.strip():
+            raise HTTPException(status_code=400, detail="No data provided")
+
+        # Auto-detect delimiter if not specified
+        delimiter = request.delimiter
+        if delimiter is None:
+            # Check for common delimiters
+            sample = request.data[:1000]  # Check first 1000 chars
+            if '\t' in sample:
+                delimiter = '\t'
+            elif ',' in sample:
+                delimiter = ','
+            elif ';' in sample:
+                delimiter = ';'
+            elif '|' in sample:
+                delimiter = '|'
+            else:
+                # Default to comma
+                delimiter = ','
+
+        # Parse the data
+        df = pd.read_csv(StringIO(request.data), delimiter=delimiter)
+
+        # Check if dataframe is empty
+        if df.empty:
+            raise HTTPException(status_code=400, detail="Parsed data is empty")
+
+        # Generate a cache key for pasted data
+        import hashlib
+        import time
+        cache_key = f"pasted_{hashlib.md5(request.data[:100].encode()).hexdigest()}_{int(time.time())}"
+        dataframe_cache[cache_key] = df
+
+        # Analyze the data
+        analyzer = TableAnalyzer(df)
+        analysis = analyzer.analyze_all()
+
+        return {
+            "status": "success",
+            "filename": "Pasted Data",
+            "cache_key": cache_key,
+            "analysis": analysis
+        }
+
+    except pd.errors.EmptyDataError:
+        raise HTTPException(status_code=400, detail="Data is empty or invalid")
+    except pd.errors.ParserError as e:
+        raise HTTPException(status_code=400, detail=f"Error parsing data: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error analyzing data: {str(e)}")
+
+
 class CustomChartRequest(BaseModel):
     cache_key: str
     chart_type: str

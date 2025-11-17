@@ -103,6 +103,36 @@
             animation: fadeInUp 0.8s ease 0.2s both;
         }
 
+        /* Paste notification */
+        .paste-notification {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--primary);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-lg);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            display: none;
+        }
+
+        .paste-notification.active {
+            display: block;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
         .upload-area {
             border: 2px dashed var(--border-secondary);
             border-radius: 8px;
@@ -718,8 +748,8 @@
             <div class="upload-area" id="uploadArea">
                 <div class="upload-content">
                     <div class="upload-icon">📊</div>
-                    <div class="upload-text">Drop your data file here</div>
-                    <div class="upload-hint">or click to browse • Supports CSV, Excel, JSON, Parquet, and more</div>
+                    <div class="upload-text">Drop your data file here or paste data</div>
+                    <div class="upload-hint">Upload a file, paste from clipboard (Ctrl/Cmd+V), or click to browse • Supports CSV, Excel, JSON, Parquet, and more</div>
                     <button class="upload-button">Choose File</button>
                 </div>
                 <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json,.tsv,.txt,.parquet,.feather,.pkl,.pickle,.db,.sqlite,.sqlite3,.h5,.hdf5,.orc">
@@ -734,6 +764,11 @@
             </div>
 
             <div class="error" id="error"></div>
+        </div>
+
+        <!-- Paste notification -->
+        <div class="paste-notification" id="pasteNotification">
+            📋 Data detected! Analyzing...
         </div>
 
         <div class="chart-builder" id="chartBuilder">
@@ -811,11 +846,78 @@
         const results = document.getElementById('results');
         const errorDiv = document.getElementById('error');
         const uploadButton = document.querySelector('.upload-button');
+        const pasteNotification = document.getElementById('pasteNotification');
 
         // Chart builder state
         let currentCacheKey = null;
         let columnInfo = null;
         let selectedChartType = null;
+
+        // Global paste detection
+        document.addEventListener('paste', async (e) => {
+            // Get pasted text
+            const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+
+            if (!pastedData || !pastedData.trim()) {
+                return;
+            }
+
+            // Check if it looks like tabular data (has newlines and delimiters)
+            const hasNewlines = pastedData.includes('\n');
+            const hasDelimiters = /[,\t;|]/.test(pastedData);
+
+            if (!hasNewlines || !hasDelimiters) {
+                return; // Not tabular data, ignore
+            }
+
+            e.preventDefault();
+
+            // Show notification
+            pasteNotification.classList.add('active');
+            setTimeout(() => {
+                pasteNotification.classList.remove('active');
+            }, 3000);
+
+            // Analyze pasted data
+            await analyzePastedData(pastedData);
+        });
+
+        async function analyzePastedData(pastedData) {
+            errorDiv.classList.remove('active');
+            results.classList.remove('active');
+            loading.classList.add('active');
+
+            try {
+                const response = await fetch('http://localhost:8000/analyze_text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data: pastedData,
+                        delimiter: null  // Auto-detect
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Analysis failed');
+                }
+
+                const data = await response.json();
+                displayResults(data.analysis);
+
+                // Store cache key and load chart builder
+                if (data.cache_key) {
+                    currentCacheKey = data.cache_key;
+                    await loadChartBuilder();
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
 
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
