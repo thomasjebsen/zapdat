@@ -9,7 +9,7 @@ Automatic Exploratory Data Analysis for your CSV files. Upload a table and insta
 - 📊 **Smart Statistics** - Type-specific analysis (mean/median for numbers, frequency for categories)
 - 🎯 **Data Quality Checks** - Missing values, duplicates, and more
 - ⚡ **Fast & Simple** - Just upload and analyze
-- 🎨 **Modern Design** - Sleek 2025 SaaS interface with dark theme and glassmorphism
+- 🎨 **Modern Design** - Clean, minimal interface with light theme
 
 ## Quick Start
 
