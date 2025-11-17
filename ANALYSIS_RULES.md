@@ -175,6 +175,15 @@ Automatically detects common patterns:
 - Cap display items while maintaining usefulness
 - Efficient calculations for large datasets
 
+### 6. Progressive Disclosure (UI)
+- **Basic stats always visible**: Show most important information first
+- **Collapsible sections** (collapsed by default):
+  - Advanced Statistics (numerical: outliers, skewness, quartiles)
+  - Category Breakdown (categorical: full table with percentages)
+  - Sample Values (text: example entries)
+- **Larger chart area**: Minimum 400px height for better visualization
+- **Clean hierarchy**: Reduces cognitive load, focuses on key insights
+
 ---
 
 ## Example Use Cases
