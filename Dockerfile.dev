@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install uv for faster dependency installation
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copy project files
+COPY pyproject.toml ./
+COPY requirements.txt ./
+
+# Install all dependencies including dev dependencies
+RUN uv pip install --system -r requirements.txt && \
+    uv pip install --system ruff mypy pytest pytest-asyncio httpx pre-commit pandas-stubs || \
+    (pip install -r requirements.txt && \
+     pip install ruff mypy pytest pytest-asyncio httpx pre-commit pandas-stubs)
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
