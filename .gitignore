@@ -39,6 +39,11 @@ Thumbs.db
 .coverage
 htmlcov/
 
+# Modern Python tooling caches
+.ruff_cache/
+.mypy_cache/
+.uv/
+
 # Environment variables
 .env
 .env.local
