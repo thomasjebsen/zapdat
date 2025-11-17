@@ -1,220 +1,89 @@
-# CLAUDE.md - Project Guide for AI Assistants
+# CLAUDE.md - Project Guide
 
-## Project Overview
+## Product Vision
 
-**zapdat** is a Table EDA (Exploratory Data Analysis) Analyzer that provides automatic data insights for CSV files. Users upload CSV files and instantly receive comprehensive statistical analysis and interactive visualizations.
+**zapdat** is a quick insights tool for CSV data analysis. Upload a file, instantly see the numbers that matter most.
 
-### Core Purpose
-- Automatic type detection (numeric, categorical, boolean, text)
-- Smart statistical analysis based on column types
-- Interactive visualizations using Plotly
-- Data quality checks (missing values, duplicates)
-- Modern, user-friendly interface
+**Key differentiator**: Client-side processing (privacy-first, no data sent to servers) - currently prototyping with FastAPI backend, migrating to danfo.js.
 
-## Architecture
+**Target users**: Data analysts and business users who need fast, essential insights without writing code.
 
-### Tech Stack
-- **Backend**: Python 3.x with FastAPI
-- **Data Processing**: pandas, numpy
-- **Visualization**: plotly
-- **Frontend**: Vanilla JavaScript with Plotly.js
-- **Server**: uvicorn (ASGI server)
+## Current Architecture (v1 - Server-side)
 
-### Project Structure
 ```
 zapdat/
 ├── backend/
-│   ├── main.py           # FastAPI app with endpoints
-│   ├── analyzer.py       # Core analysis logic (TableAnalyzer class)
+│   ├── main.py       # FastAPI: /analyze endpoint
+│   ├── analyzer.py   # TableAnalyzer class (type detection, stats, plots)
 ├── frontend/
-│   └── index.html        # Single-page web interface
-├── requirements.txt      # Python dependencies
-├── test_analyzer.py      # Unit tests for analyzer
-├── sample_data.csv       # Sample data for testing
-└── README.md            # User documentation
+│   └── index.html    # Drag-drop upload, Plotly visualizations
+├── test_analyzer.py  # Unit tests
+└── sample_data.csv   # Test data
 ```
+
+**Tech stack**: FastAPI, pandas, plotly (Python) + Plotly.js (frontend)
+
+## What It Does
+
+1. **Auto type detection**: numeric, categorical, text, datetime
+2. **Essential stats**: mean/median for numbers, top values for categories
+3. **Quick visualizations**: histograms, bar charts
+4. **Data quality**: missing values, duplicates
 
 ## Key Components
 
-### 1. FastAPI Backend (`backend/main.py`)
-- **Endpoints**:
-  - `GET /` - Serves the frontend HTML
-  - `POST /analyze` - Accepts CSV upload, returns analysis
-  - `GET /health` - Health check endpoint
-- **Features**: CORS middleware, file validation, error handling
+### `TableAnalyzer` (backend/analyzer.py)
+- `_detect_types()` - Smart detection (e.g., 0/1 → categorical)
+- `analyze_numeric()` - Stats + histogram
+- `analyze_categorical()` - Frequencies + bar chart
+- `analyze_all()` - Full dataset analysis
+- **Safety**: Uses `safe_float()`, `safe_int()` for NaN/inf handling
 
-### 2. TableAnalyzer (`backend/analyzer.py`)
-- **Type Detection**: Automatically detects column types
-- **Analysis Methods**:
-  - `analyze_numeric()` - Mean, median, std dev, quartiles, histograms
-  - `analyze_categorical()` - Unique counts, frequencies, bar charts
-  - `analyze_all()` - Complete dataset analysis
-- **Data Safety**: Handles NaN, infinity, empty data gracefully
+### API (backend/main.py)
+- `POST /analyze` - Upload CSV, get JSON analysis
+- Error handling for empty/malformed files
 
-### 3. Frontend (`frontend/index.html`)
-- Modern glassmorphism design with dark theme
-- Drag-and-drop file upload
-- Real-time analysis display
-- Interactive Plotly visualizations
+### Frontend (frontend/index.html)
+- Clean light theme UI
+- Drag-and-drop upload
+- Renders stats + Plotly charts
 
-## Common Development Tasks
+## Development Commands
 
-### Running the Application
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Run server
+cd backend && uvicorn main:app --reload
 
-# Start the server
-cd backend
-uvicorn main:app --reload
-```
-
-### Running Tests
-```bash
+# Run tests
 pytest test_analyzer.py -v
 ```
 
 ## Slash Commands (Specialized Agents)
 
-This project includes custom slash commands that act as specialized agents for different tasks. These are stored in `.claude/commands/` and can be invoked during development.
+Invoke with `/command` to delegate tasks:
 
-### Usage
+- `/dev` - Backend features, bug fixes, tests (e.g., `/dev Add correlation matrix`)
+- `/design` - UI/UX improvements (e.g., `/design Improve error messages`)
+- `/test` - Quality assurance, edge cases (e.g., `/test Verify empty CSV handling`)
 
-```
-/dev Add a correlation matrix visualization
-/design Improve the file upload experience with better feedback
-/test Run tests and check for edge cases with empty CSV files
-```
+## Priority Roadmap
 
-### Available Commands
-
-#### `/dev` - Developer Agent
-**When to use**: Backend development, features, and bug fixes
-
-**Responsibilities**:
-- Implement new analysis features (correlation matrix, box plots, datetime analysis)
-- Add new FastAPI endpoints and improve existing ones
-- Fix bugs and handle edge cases (empty files, malformed CSVs, NaN values)
-- Add support for new file formats (Excel/XLSX)
-- Optimize performance for large datasets
-- Write and fix tests
-- Add type hints and improve code quality
-
-**Example**: `/dev Add endpoint to export analysis as JSON`
-
-#### `/design` - Design & UX Agent
-**When to use**: UI improvements and user experience
-
-**Responsibilities**:
-- Enhance the web interface design and aesthetics
-- Improve visualization layouts and interactivity
-- Add user-friendly features (filtering, sorting, search)
-- Implement responsive design for mobile devices
-- Add dark/light theme toggle
-- Improve accessibility (ARIA labels, keyboard navigation)
-- Create better loading states and error messages
-
-**Example**: `/design Add a filter to show only numeric columns`
-
-#### `/test` - Testing Agent
-**When to use**: Quality assurance and validation
-
-**Responsibilities**:
-- Run the test suite and fix failing tests
-- Test with various CSV formats and edge cases
-- Add new test cases for features
-- Perform end-to-end testing of upload-analyze-display flow
-- Test error handling and validation
-- Verify visualizations render correctly
-- Test with large files and performance scenarios
-
-**Example**: `/test Verify the analyzer handles single-column CSVs correctly`
-
-### Creating New Commands
-
-To add a new slash command:
-1. Create a markdown file in `.claude/commands/`
-2. Add frontmatter with description
-3. Write the prompt/instructions
-4. Use `$ARGUMENTS` to accept parameters
-
-Example structure:
-```markdown
----
-description: Brief description of the command
----
-
-# Command Name
-
-Your detailed instructions here...
-
-## Task
-$ARGUMENTS
-```
+1. **Client-side processing** (danfo.js) - THE differentiator
+2. Correlation matrix for numeric columns
+3. DateTime analysis with time series plots
+4. Export reports (JSON/HTML)
+5. Excel/XLSX support
 
 ## Development Guidelines
 
-### Adding New Features
-1. Update `analyzer.py` for new analysis methods
-2. Modify the `/analyze` endpoint if needed
-3. Update frontend to display new results
-4. Add tests in `test_analyzer.py`
-5. Update README.md
-
-### Code Quality
-- Use type hints in Python code
-- Handle edge cases (empty data, NaN, infinity)
-- Add error handling with descriptive messages
-- Write unit tests for new functions
-- Keep functions focused and small
-
-### Testing Strategy
-- Unit tests for analyzer functions
-- Test edge cases (empty files, single column, all NaN)
-- Test type detection accuracy
-- Validate JSON output structure
-
-## Roadmap Items
-
-Priority tasks for future development:
-1. Client-side processing with danfo.js (no server upload needed)
-2. Excel/XLSX file support
-3. Correlation matrix for numeric columns
-4. Box plots for outlier detection
-5. DateTime column analysis with time series plots
-6. Export analysis reports as PDF/HTML
-7. Comparison mode for multiple datasets
-8. Custom statistical tests
+- **Preserve safety**: Always use `safe_float()`, `safe_int()` for data conversions
+- **Test edge cases**: Empty data, all NaN, single column, large files
+- **JSON serialization**: Ensure all outputs are JSON-safe
+- **Keep it fast**: Focus on essential insights, not exhaustive analysis
 
 ## Quick Reference
 
-### Key Files to Modify
-- **Add analysis features**: `backend/analyzer.py`
-- **Add API endpoints**: `backend/main.py`
-- **Update UI**: `frontend/index.html`
-- **Add tests**: `test_analyzer.py`
-- **Update dependencies**: `requirements.txt`
-
-### Important Classes/Functions
-- `TableAnalyzer` - Main analysis class
-- `_detect_types()` - Column type detection logic
-- `analyze_numeric()` - Numeric column analysis
-- `analyze_categorical()` - Categorical column analysis
-- `safe_float()`, `safe_int()` - Safe type conversion utilities
-
-## Tips for AI Assistants
-
-1. **Always test after changes**: Run tests and verify the app still works
-2. **Preserve error handling**: The code has robust error handling - maintain it
-3. **Type safety**: Use the safe_float() and safe_int() utilities for data conversions
-4. **Check edge cases**: Empty data, all NaN values, single row/column
-5. **JSON serialization**: Ensure all returned data is JSON-serializable
-6. **Frontend sync**: If backend output changes, update frontend parsing
-7. **Plotly versions**: Keep plotly version compatible between Python and JS
-
-## Getting Help
-
-- **Tests**: Run `pytest test_analyzer.py -v` to see what's working
-- **API docs**: Visit `http://localhost:8000/docs` when server is running
-- **Sample data**: Use `sample_data.csv` for quick testing
-- **Logs**: Check uvicorn output for server errors
+**Add analysis logic**: `backend/analyzer.py`
+**API changes**: `backend/main.py`
+**UI updates**: `frontend/index.html`
+**Tests**: `test_analyzer.py`

@@ -4,4 +4,14 @@ python-multipart==0.0.6
 pandas==2.1.3
 numpy==1.26.2
 plotly==5.18.0
+pydantic==2.5.0
 ollama==0.4.4
+
+# Testing
+pytest==7.4.3
+
+# Multi-format support
+openpyxl==3.1.2       # Excel (.xlsx)
+xlrd==2.0.1           # Excel (.xls)
+pyarrow==14.0.1       # Parquet, Feather, ORC
+tables==3.9.2         # HDF5
