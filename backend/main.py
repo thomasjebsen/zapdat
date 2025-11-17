@@ -1,14 +1,16 @@
 """
 FastAPI backend for Table EDA Analyzer
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException, Body
+import logging
+from io import StringIO
+from typing import List, Optional
+
+import pandas as pd
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional, List
-import pandas as pd
-from io import StringIO
+
 from analyzer import TableAnalyzer
 from visualizations import ChartGenerator
 
@@ -39,7 +41,6 @@ async def analyze_csv(file: UploadFile = File(...)):
     """
     Upload a CSV file and get automatic EDA analysis
     """
-    import logging
     logger = logging.getLogger("uvicorn")
 
     logger.info(f"Received file: {file.filename}, content_type: {file.content_type}")
@@ -93,7 +94,10 @@ async def analyze_csv(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Error parsing CSV: {str(e)}")
     except UnicodeDecodeError as e:
         logger.error(f"UnicodeDecodeError for {file.filename}: {str(e)}")
-        raise HTTPException(status_code=400, detail="File encoding error. Please ensure the file is UTF-8 encoded.")
+        raise HTTPException(
+            status_code=400,
+            detail="File encoding error. Please ensure the file is UTF-8 encoded.",
+        )
     except Exception as e:
         logger.error(f"Unexpected error analyzing {file.filename}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error analyzing file: {str(e)}")

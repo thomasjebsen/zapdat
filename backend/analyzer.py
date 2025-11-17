@@ -1,12 +1,13 @@
 """
 Data analysis module for automatic EDA
 """
-import pandas as pd
+import math
+from typing import Any, Dict, List
+
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from typing import Dict, Any, List
-import math
 
 
 def safe_float(value):
@@ -123,7 +124,7 @@ class TableAnalyzer:
                 dist_shape = "Highly left-skewed"
             else:
                 dist_shape = "Left-skewed"
-        except:
+        except Exception:
             skew = None
             dist_shape = "Unknown"
 
@@ -249,11 +250,14 @@ class TableAnalyzer:
         # Create bar chart only if we have data
         try:
             top_values = value_counts.head(chart_limit)
+            chart_title = f"Top Values in {column}"
+            if unique_count > chart_limit:
+                chart_title += f" (showing {chart_limit} of {unique_count})"
             fig = px.bar(
                 x=top_values.index.astype(str),
                 y=top_values.values,
-                title=f"Top Values in {column}" + (f" (showing {chart_limit} of {unique_count})" if unique_count > chart_limit else ""),
-                labels={'x': column, 'y': 'Count'}
+                title=chart_title,
+                labels={'x': column, 'y': 'Count'},
             )
             fig.update_layout(
                 showlegend=False,
@@ -302,7 +306,8 @@ class TableAnalyzer:
 
         # Pattern detection
         pattern_hint = "Free text"
-        if data_str.str.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').sum() > len(data) * 0.5:
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if data_str.str.match(email_pattern).sum() > len(data) * 0.5:
             pattern_hint = "Email addresses"
         elif data_str.str.match(r'^https?://').sum() > len(data) * 0.5:
             pattern_hint = "URLs"
