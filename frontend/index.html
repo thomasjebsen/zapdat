@@ -511,13 +511,12 @@
         }
 
         .builder-card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(10px);
+            background: var(--bg-primary);
             border: 1px solid var(--border);
-            border-radius: 20px;
+            border-radius: 12px;
             padding: 2.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 10px 40px var(--shadow);
+            box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
         }
 
         .chart-types {
@@ -528,9 +527,9 @@
         }
 
         .chart-type-btn {
-            background: rgba(15, 23, 42, 0.5);
+            background: var(--bg-secondary);
             border: 2px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 1.5rem;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -539,14 +538,14 @@
 
         .chart-type-btn:hover {
             border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
+            background: var(--bg-tertiary);
             transform: translateY(-2px);
         }
 
         .chart-type-btn.active {
             border-color: var(--primary);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+            background: var(--bg-tertiary);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
         }
 
         .chart-type-icon {
@@ -587,9 +586,9 @@
         }
 
         .form-select, .form-input {
-            background: rgba(15, 23, 42, 0.5);
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 0.875rem 1rem;
             color: var(--text-primary);
             font-size: 1rem;
@@ -600,7 +599,8 @@
         .form-select:focus, .form-input:focus {
             outline: none;
             border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.05);
+            background: var(--bg-tertiary);
+            border-width: 2px;
         }
 
         .form-select option {
@@ -608,39 +608,13 @@
             color: var(--text-primary);
         }
 
-        .generate-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 2.5rem;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-        }
-
-        .generate-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.5);
-        }
-
-        .generate-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         .custom-chart-container {
             margin-top: 2rem;
         }
 
         .chart-item {
-            background: rgba(15, 23, 42, 0.3);
-            border-radius: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
             padding: 1.5rem;
             border: 1px solid var(--border);
             margin-bottom: 1.5rem;
@@ -686,23 +660,25 @@
 
         .color-scheme-btn {
             padding: 0.75rem;
-            background: rgba(15, 23, 42, 0.5);
+            background: var(--bg-secondary);
             border: 2px solid var(--border);
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             text-align: center;
             font-size: 0.85rem;
             color: var(--text-secondary);
+            font-weight: 500;
         }
 
         .color-scheme-btn:hover {
             border-color: var(--primary);
+            background: var(--bg-tertiary);
         }
 
         .color-scheme-btn.active {
             border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.1);
+            background: var(--bg-tertiary);
             color: var(--text-primary);
         }
     </style>
@@ -782,11 +758,6 @@
                 </div>
 
                 <div id="chartOptions"></div>
-
-                <button class="generate-btn" id="generateChart" disabled>
-                    <span>✨</span>
-                    <span>Generate Chart</span>
-                </button>
 
                 <div class="custom-chart-container" id="customChartContainer"></div>
             </div>
@@ -1072,16 +1043,10 @@
                     // Generate form fields (this will reset the form)
                     generateChartOptions(selectedChartType);
 
-                    // Enable generate button
-                    document.getElementById('generateChart').disabled = false;
+                    // Generate chart immediately
+                    generateCustomChart();
                 });
             });
-
-            // Generate chart button - remove old listener and add new one
-            const generateBtn = document.getElementById('generateChart');
-            const newGenerateBtn = generateBtn.cloneNode(true);
-            generateBtn.parentNode.replaceChild(newGenerateBtn, generateBtn);
-            newGenerateBtn.addEventListener('click', generateCustomChart);
         }
 
         function generateChartOptions(chartType) {
@@ -1098,7 +1063,7 @@
 
                 case 'line':
                     html += createSelect('x_column', 'X-Axis Column', columnInfo.all_columns);
-                    html += createMultiSelect('y_columns', 'Y-Axis Columns', columnInfo.numeric_columns);
+                    html += createSelect('y_column', 'Y-Axis Column', columnInfo.numeric_columns);
                     break;
 
                 case 'box':
@@ -1132,14 +1097,6 @@
                     break;
             }
 
-            // Common options
-            html += `
-                <div class="form-group">
-                    <label class="form-label">Chart Title (Optional)</label>
-                    <input type="text" id="chart_title" class="form-input" placeholder="Auto-generated">
-                </div>
-            `;
-
             html += '</div>';
 
             // Color schemes
@@ -1164,8 +1121,24 @@
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.color-scheme-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
+                    // Update chart in real-time
+                    if (selectedChartType) {
+                        generateCustomChart();
+                    }
                 });
             });
+
+            // Add real-time update listeners to all form elements
+            setTimeout(() => {
+                const formElements = optionsDiv.querySelectorAll('select, input');
+                formElements.forEach(element => {
+                    element.addEventListener('change', () => {
+                        if (selectedChartType) {
+                            generateCustomChart();
+                        }
+                    });
+                });
+            }, 100);
         }
 
         function createSelect(id, label, options) {
@@ -1192,19 +1165,16 @@
         }
 
         async function generateCustomChart() {
-            const generateBtn = document.getElementById('generateChart');
-            const chartContainer = document.getElementById('customChartContainer');
+            if (!selectedChartType) return;
 
-            generateBtn.disabled = true;
-            generateBtn.innerHTML = '<span>⏳</span><span>Generating...</span>';
+            const chartContainer = document.getElementById('customChartContainer');
 
             try {
                 // Build request payload
                 const payload = {
                     cache_key: currentCacheKey,
                     chart_type: selectedChartType,
-                    color_scheme: document.querySelector('.color-scheme-btn.active')?.dataset.scheme || 'viridis',
-                    title: document.getElementById('chart_title')?.value || null
+                    color_scheme: document.querySelector('.color-scheme-btn.active')?.dataset.scheme || 'viridis'
                 };
 
                 // Add chart-specific fields
@@ -1220,7 +1190,7 @@
 
                     case 'line':
                         payload.x_column = document.getElementById('x_column').value;
-                        payload.y_columns = Array.from(document.getElementById('y_columns').selectedOptions).map(opt => opt.value);
+                        payload.y_column = document.getElementById('y_column').value;
                         break;
 
                     case 'box':
@@ -1255,45 +1225,46 @@
 
                 const data = await response.json();
 
-                // Create new chart item
-                const chartId = `chart-${Date.now()}`;
-                const chartItem = document.createElement('div');
-                chartItem.className = 'chart-item';
-                chartItem.id = `item-${chartId}`;
+                // Replace existing chart or create new one
+                const chartId = 'current-chart';
+                let chartItem = document.getElementById('item-' + chartId);
 
-                // Get chart title from payload or use default
-                const chartTitle = payload.title || getDefaultChartTitle(selectedChartType, payload);
-
-                chartItem.innerHTML = `
-                    <div class="chart-item-header">
-                        <div class="chart-item-title">${getChartTypeEmoji(selectedChartType)} ${chartTitle}</div>
-                        <button class="chart-item-delete" onclick="deleteChart('item-${chartId}')">🗑️ Delete</button>
-                    </div>
-                    <div id="${chartId}"></div>
-                `;
-
-                // Prepend chart (newest first)
-                chartContainer.insertBefore(chartItem, chartContainer.firstChild);
+                if (!chartItem) {
+                    chartItem = document.createElement('div');
+                    chartItem.className = 'chart-item';
+                    chartItem.id = 'item-' + chartId;
+                    chartItem.innerHTML = `
+                        <div class="chart-item-header">
+                            <button class="chart-item-delete" onclick="deleteChart('item-${chartId}')">🗑️ Delete</button>
+                        </div>
+                        <div id="${chartId}"></div>
+                    `;
+                    chartContainer.innerHTML = '';
+                    chartContainer.appendChild(chartItem);
+                }
 
                 // Render plot
                 const plotData = JSON.parse(data.chart);
                 const layout = {
                     ...plotData.layout,
+                    title: undefined,  // Remove chart title
                     paper_bgcolor: 'rgba(0,0,0,0)',
                     plot_bgcolor: 'rgba(0,0,0,0)',
                     font: {
-                        color: '#f1f5f9',
+                        color: '#0f172a',
                         family: 'Inter, sans-serif'
                     },
                     xaxis: {
                         ...(plotData.layout.xaxis || {}),
-                        gridcolor: '#334155',
-                        color: '#f1f5f9'
+                        gridcolor: '#e2e8f0',
+                        color: '#0f172a',
+                        zerolinecolor: '#cbd5e1'
                     },
                     yaxis: {
                         ...(plotData.layout.yaxis || {}),
-                        gridcolor: '#334155',
-                        color: '#f1f5f9'
+                        gridcolor: '#e2e8f0',
+                        color: '#0f172a',
+                        zerolinecolor: '#cbd5e1'
                     }
                 };
 
@@ -1305,14 +1276,8 @@
                     });
                 }, 100);
 
-                // Scroll to new chart
-                chartItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
             } catch (error) {
-                showError(error.message);
-            } finally {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '<span>✨</span><span>Generate Chart</span>';
+                console.error('Chart generation error:', error);
             }
         }
 
@@ -1334,7 +1299,7 @@
                 case 'scatter':
                     return `${payload.y_column} vs ${payload.x_column}`;
                 case 'line':
-                    return `${payload.y_columns.join(', ')} over ${payload.x_column}`;
+                    return `${payload.y_column} over ${payload.x_column}`;
                 case 'box':
                 case 'violin':
                     return `Distribution of ${payload.columns.join(', ')}`;
