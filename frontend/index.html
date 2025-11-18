@@ -901,6 +901,27 @@
         let columnInfo = null;
         let selectedChartType = null;
 
+        // Number abbreviation function
+        function abbreviateNumber(num) {
+            if (num === null || num === undefined || isNaN(num)) {
+                return 'N/A';
+            }
+
+            const absNum = Math.abs(num);
+            const sign = num < 0 ? '-' : '';
+
+            if (absNum >= 1e9) {
+                return sign + (absNum / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+            }
+            if (absNum >= 1e6) {
+                return sign + (absNum / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+            }
+            if (absNum >= 1e3) {
+                return sign + (absNum / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+            }
+            return sign + absNum.toString();
+        }
+
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadButton.addEventListener('click', (e) => {
@@ -1001,19 +1022,19 @@
 
             overviewStats.innerHTML = `
                 <div class="stat-box" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-                    <div class="stat-value">${overview.rows.toLocaleString()}</div>
+                    <div class="stat-value">${abbreviateNumber(overview.rows)}</div>
                     <div class="stat-label">Rows</div>
                 </div>
                 <div class="stat-box" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                    <div class="stat-value">${overview.columns}</div>
+                    <div class="stat-value">${abbreviateNumber(overview.columns)}</div>
                     <div class="stat-label">Columns</div>
                 </div>
                 <div class="stat-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                    <div class="stat-value">${totalMissing.toLocaleString()}</div>
+                    <div class="stat-value">${abbreviateNumber(totalMissing)}</div>
                     <div class="stat-label">Missing Values</div>
                 </div>
                 <div class="stat-box" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                    <div class="stat-value">${overview.duplicates.toLocaleString()}</div>
+                    <div class="stat-value">${abbreviateNumber(overview.duplicates)}</div>
                     <div class="stat-label">Duplicates</div>
                 </div>
             `;
@@ -1065,7 +1086,7 @@
                         return 'N/A';
                     } else if (typeof value === 'number') {
                         return Number.isInteger(value) ?
-                            value.toLocaleString() :
+                            abbreviateNumber(value) :
                             value.toFixed(2);
                     } else {
                         return value;
@@ -1183,7 +1204,7 @@
                     valueCountsHtml += `
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 0.5rem; color: var(--text-primary);">${category}</td>
-                            <td style="padding: 0.5rem; text-align: right; font-weight: 500; color: var(--text-primary);">${count.toLocaleString()}</td>
+                            <td style="padding: 0.5rem; text-align: right; font-weight: 500; color: var(--text-primary);">${abbreviateNumber(count)}</td>
                             <td style="padding: 0.5rem; text-align: right; color: var(--text-secondary);">${percentage}%</td>
                         </tr>
                     `;
