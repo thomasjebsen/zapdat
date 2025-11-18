@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>zapdat - Instant Table Insights</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1152,6 +1153,61 @@
         .color-scheme-btn[data-scheme="bold"]::before {
             background: linear-gradient(135deg, #e74c3c 0%, #3498db 25%, #2ecc71 50%, #f39c12 75%, #9b59b6 100%);
         }
+
+        /* PDF Download Button */
+        .download-pdf-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .download-pdf-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .download-pdf-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+        }
+
+        .download-pdf-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-pdf-btn:active {
+            transform: translateY(0);
+        }
+
+        .download-pdf-btn:disabled {
+            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .download-pdf-btn:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 12px rgba(156, 163, 175, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -1361,6 +1417,10 @@
         </div>
 
         <div class="results" id="results">
+            <button class="download-pdf-btn" id="downloadPdfBtn" onclick="downloadPDF()">
+                <span>📄</span>
+                <span>Download PDF Report</span>
+            </button>
             <div class="overview-card">
                 <h2 class="card-title">
                     <span>📋</span>
@@ -1529,6 +1589,9 @@
         }
 
         function displayResults(analysis) {
+            // Store analysis data for PDF generation
+            analysisData = analysis;
+
             // Hide landing page sections
             document.querySelector('.features-section')?.classList.add('hidden');
             document.querySelector('.examples-section')?.classList.add('hidden');
@@ -2200,6 +2263,271 @@
             if (chartItem) {
                 chartItem.style.animation = 'fadeOut 0.3s ease';
                 setTimeout(() => chartItem.remove(), 300);
+            }
+        }
+
+        // ============ PDF DOWNLOAD FUNCTIONALITY ============
+
+        let analysisData = null; // Store analysis data for PDF generation
+
+        async function downloadPDF() {
+            const btn = document.getElementById('downloadPdfBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span><span>Generating PDF...</span>';
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 15;
+                let yPos = margin;
+
+                // Helper function to check if we need a new page
+                const checkNewPage = (heightNeeded) => {
+                    if (yPos + heightNeeded > pageHeight - margin) {
+                        pdf.addPage();
+                        yPos = margin;
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Add title
+                pdf.setFontSize(24);
+                pdf.setTextColor(99, 102, 241); // Primary color
+                pdf.text('zapdat Analysis Report', margin, yPos);
+                yPos += 12;
+
+                // Add timestamp
+                pdf.setFontSize(10);
+                pdf.setTextColor(100, 116, 139); // Secondary color
+                const timestamp = new Date().toLocaleString();
+                pdf.text(`Generated: ${timestamp}`, margin, yPos);
+                yPos += 3;
+
+                // Add filename if available
+                if (currentFile) {
+                    pdf.text(`File: ${currentFile.name}`, margin, yPos);
+                    yPos += 10;
+                } else {
+                    yPos += 7;
+                }
+
+                // Add overview section
+                if (analysisData && analysisData.overview) {
+                    checkNewPage(40);
+
+                    pdf.setFontSize(16);
+                    pdf.setTextColor(15, 23, 42); // Primary text
+                    pdf.text('Dataset Overview', margin, yPos);
+                    yPos += 8;
+
+                    pdf.setFontSize(11);
+                    const overview = analysisData.overview;
+                    const totalMissing = Object.values(overview.missing_values).reduce((a, b) => a + b, 0);
+
+                    const overviewData = [
+                        ['Rows', overview.rows.toLocaleString()],
+                        ['Columns', overview.columns.toString()],
+                        ['Missing Values', totalMissing.toLocaleString()],
+                        ['Duplicates', overview.duplicates.toLocaleString()]
+                    ];
+
+                    overviewData.forEach(([label, value]) => {
+                        pdf.setTextColor(100, 116, 139);
+                        pdf.text(label + ':', margin, yPos);
+                        pdf.setTextColor(15, 23, 42);
+                        pdf.text(value, margin + 50, yPos);
+                        yPos += 6;
+                    });
+
+                    yPos += 5;
+                }
+
+                // Add columns section
+                if (analysisData && analysisData.columns) {
+                    for (const [columnName, columnData] of Object.entries(analysisData.columns)) {
+                        checkNewPage(60);
+
+                        // Column header
+                        pdf.setFontSize(14);
+                        pdf.setTextColor(15, 23, 42);
+                        const typeEmoji = {
+                            'numeric': '🔢',
+                            'categorical': '🏷️',
+                            'text': '📝',
+                            'datetime': '📅'
+                        };
+                        pdf.text(`${columnName} (${columnData.type})`, margin, yPos);
+                        yPos += 8;
+
+                        // Column statistics
+                        if (columnData.analysis && columnData.analysis.stats) {
+                            pdf.setFontSize(10);
+                            const stats = columnData.analysis.stats;
+
+                            // Format stats for display
+                            const formatValue = (value) => {
+                                if (value === null || value === undefined) return 'N/A';
+                                if (typeof value === 'number') {
+                                    return Number.isInteger(value) ?
+                                        value.toLocaleString() :
+                                        value.toFixed(2);
+                                }
+                                return String(value);
+                            };
+
+                            const formatLabel = (key) => {
+                                return key.replace(/_/g, ' ')
+                                    .replace(/\b\w/g, l => l.toUpperCase())
+                                    .replace(/Pct/g, '%')
+                                    .replace(/Std/g, 'Std Dev');
+                            };
+
+                            // Display key stats (limit to important ones for space)
+                            const keyStats = columnData.type === 'numeric'
+                                ? ['count', 'mean', 'median', 'min', 'max', 'std', 'missing']
+                                : columnData.type === 'categorical'
+                                ? ['count', 'unique', 'mode', 'mode_pct', 'missing']
+                                : ['count', 'unique', 'missing'];
+
+                            let statsDisplayed = 0;
+                            for (const key of keyStats) {
+                                if (stats[key] !== undefined) {
+                                    checkNewPage(6);
+                                    pdf.setTextColor(100, 116, 139);
+                                    pdf.text(formatLabel(key) + ':', margin + 5, yPos);
+                                    pdf.setTextColor(15, 23, 42);
+                                    pdf.text(formatValue(stats[key]), margin + 55, yPos);
+                                    yPos += 5;
+                                    statsDisplayed++;
+
+                                    // Limit stats to avoid too much text
+                                    if (statsDisplayed >= 7) break;
+                                }
+                            }
+                            yPos += 3;
+                        }
+
+                        // Add chart if available
+                        if (columnData.analysis && columnData.analysis.plot) {
+                            try {
+                                // Find the plot div for this column
+                                const plotDivs = document.querySelectorAll('.plot-container');
+                                let plotDiv = null;
+
+                                for (const div of plotDivs) {
+                                    const sanitizedName = columnName.replace(/[^a-zA-Z0-9]/g, '-');
+                                    if (div.id.includes(sanitizedName)) {
+                                        plotDiv = div;
+                                        break;
+                                    }
+                                }
+
+                                if (plotDiv && plotDiv.querySelector('.plotly')) {
+                                    checkNewPage(100);
+
+                                    // Convert Plotly chart to static image
+                                    const imgData = await Plotly.toImage(plotDiv, {
+                                        format: 'png',
+                                        width: 800,
+                                        height: 500
+                                    });
+
+                                    // Add image to PDF
+                                    const imgWidth = pageWidth - (2 * margin);
+                                    const imgHeight = (imgWidth * 500) / 800; // Maintain aspect ratio
+
+                                    // Check if we need a new page for the image
+                                    if (checkNewPage(imgHeight + 5)) {
+                                        // Image was placed on new page
+                                    }
+
+                                    pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
+                                    yPos += imgHeight + 10;
+                                } else {
+                                    console.warn(`Plot not found for column: ${columnName}`);
+                                }
+                            } catch (err) {
+                                console.error(`Error adding chart for ${columnName}:`, err);
+                                // Continue without the chart
+                            }
+                        }
+
+                        yPos += 5;
+                    }
+                }
+
+                // Add custom charts if any
+                const customChart = document.getElementById('current-chart');
+                if (customChart && customChart.querySelector('.plotly')) {
+                    try {
+                        checkNewPage(110);
+
+                        pdf.setFontSize(14);
+                        pdf.setTextColor(15, 23, 42);
+                        pdf.text('Custom Chart', margin, yPos);
+                        yPos += 8;
+
+                        const imgData = await Plotly.toImage(customChart, {
+                            format: 'png',
+                            width: 800,
+                            height: 500
+                        });
+
+                        const imgWidth = pageWidth - (2 * margin);
+                        const imgHeight = (imgWidth * 500) / 800;
+
+                        if (checkNewPage(imgHeight + 5)) {
+                            // Chart placed on new page
+                        }
+
+                        pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
+                        yPos += imgHeight + 10;
+                    } catch (err) {
+                        console.error('Error adding custom chart:', err);
+                    }
+                }
+
+                // Add footer to all pages
+                const totalPages = pdf.internal.getNumberOfPages();
+                pdf.setFontSize(8);
+                pdf.setTextColor(156, 163, 175);
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    pdf.text(
+                        `Page ${i} of ${totalPages}`,
+                        pageWidth / 2,
+                        pageHeight - 10,
+                        { align: 'center' }
+                    );
+                    pdf.text(
+                        'Generated by zapdat',
+                        pageWidth - margin,
+                        pageHeight - 10,
+                        { align: 'right' }
+                    );
+                }
+
+                // Save the PDF
+                const fileName = currentFile ?
+                    currentFile.name.replace(/\.[^/.]+$/, '') + '_analysis.pdf' :
+                    'zapdat_analysis.pdf';
+                pdf.save(fileName);
+
+                // Reset button
+                btn.disabled = false;
+                btn.innerHTML = '<span>📄</span><span>Download PDF Report</span>';
+
+                console.log('PDF generated successfully');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                showError('Failed to generate PDF: ' + error.message);
+
+                // Reset button
+                btn.disabled = false;
+                btn.innerHTML = '<span>📄</span><span>Download PDF Report</span>';
             }
         }
     </script>
