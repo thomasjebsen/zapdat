@@ -6,6 +6,7 @@
     <title>zapdat - Instant Table Insights</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -628,6 +629,55 @@
 
         .results.active {
             display: block;
+        }
+
+        /* Dataset Description Card */
+        .dataset-description-card {
+            background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+            border: 1px solid #c4b5fd;
+            border-radius: 12px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
+        }
+
+        .dataset-description-loading {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .dataset-description-loading .mini-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top-color: #8b5cf6;
+            border-right-color: #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .dataset-description-text {
+            font-size: 1.125rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            margin-top: 1rem;
+        }
+
+        .dataset-description-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.875rem;
+            background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: white;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            margin-bottom: 0.75rem;
         }
 
         /* Overview Card */
@@ -1421,6 +1471,25 @@
                 <span>📄</span>
                 <span>Download PDF Report</span>
             </button>
+
+            <!-- Dataset Description (AI-Generated) -->
+            <div class="dataset-description-card" id="datasetDescriptionCard">
+                <div class="dataset-description-badge">
+                    <span>🤖</span>
+                    <span>AI-Generated with FLAN-T5</span>
+                </div>
+                <h2 class="card-title">
+                    <span>💡</span>
+                    What's This Dataset About?
+                </h2>
+                <div id="datasetDescriptionContent">
+                    <div class="dataset-description-loading">
+                        <div class="mini-spinner"></div>
+                        <span>AI is analyzing your dataset...</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="overview-card">
                 <h2 class="card-title">
                     <span>📋</span>
@@ -1601,6 +1670,11 @@
 
             results.classList.add('active');
             results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            // Generate AI dataset description
+            if (window.generateDatasetDescription) {
+                window.generateDatasetDescription(analysis);
+            }
 
             // Display overview
             const overview = analysis.overview;
@@ -2530,6 +2604,207 @@
                 btn.innerHTML = '<span>📄</span><span>Download PDF Report</span>';
             }
         }
+    </script>
+
+    <script type="module">
+        // ============ FLAN-T5 DATASET DESCRIPTION ============
+        import { pipeline } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2';
+
+        let generator = null;
+        let isModelLoading = false;
+
+        async function loadFLANT5Model() {
+            if (generator) return generator;
+            if (isModelLoading) {
+                // Wait for existing load to complete
+                while (isModelLoading) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                return generator;
+            }
+
+            try {
+                isModelLoading = true;
+                console.log('Loading FLAN-T5 model...');
+
+                // Load FLAN-T5-small (80M params, ~160MB)
+                generator = await pipeline('text2text-generation', 'Xenova/flan-t5-small');
+
+                console.log('FLAN-T5 model loaded successfully!');
+                return generator;
+            } catch (error) {
+                console.error('Error loading FLAN-T5 model:', error);
+                throw error;
+            } finally {
+                isModelLoading = false;
+            }
+        }
+
+        function extractMetadataFromAnalysis(analysis) {
+            const overview = analysis.overview;
+            const columns = analysis.columns;
+
+            // Extract column information
+            const columnNames = [];
+            const columnTypes = [];
+            const numericCols = [];
+            const categoricalCols = [];
+            const textCols = [];
+            const datetimeCols = [];
+
+            // Sample values and stats
+            const sampleStats = {};
+
+            for (const [colName, colData] of Object.entries(columns)) {
+                columnNames.push(colName);
+                columnTypes.push(colData.type);
+
+                if (colData.type === 'numeric') {
+                    numericCols.push(colName);
+                    if (colData.analysis && colData.analysis.stats) {
+                        const stats = colData.analysis.stats;
+                        sampleStats[colName] = {
+                            type: 'numeric',
+                            mean: stats.mean,
+                            min: stats.min,
+                            max: stats.max
+                        };
+                    }
+                } else if (colData.type === 'categorical') {
+                    categoricalCols.push(colName);
+                    if (colData.analysis && colData.analysis.stats) {
+                        sampleStats[colName] = {
+                            type: 'categorical',
+                            unique: colData.analysis.stats.unique,
+                            mode: colData.analysis.stats.mode
+                        };
+                    }
+                } else if (colData.type === 'text') {
+                    textCols.push(colName);
+                } else if (colData.type === 'datetime') {
+                    datetimeCols.push(colName);
+                }
+            }
+
+            return {
+                rows: overview.rows,
+                columns: columnNames,
+                types: columnTypes,
+                numericColumns: numericCols,
+                categoricalColumns: categoricalCols,
+                textColumns: textCols,
+                datetimeColumns: datetimeCols,
+                sampleStats: sampleStats,
+                totalMissing: Object.values(overview.missing_values).reduce((a, b) => a + b, 0),
+                duplicates: overview.duplicates
+            };
+        }
+
+        function buildPromptFromMetadata(metadata) {
+            let prompt = `Describe what this dataset is about based on the following information:\n\n`;
+            prompt += `Dataset has ${metadata.rows.toLocaleString()} rows and ${metadata.columns.length} columns.\n\n`;
+
+            prompt += `Columns:\n`;
+
+            // Add numeric columns with ranges
+            if (metadata.numericColumns.length > 0) {
+                prompt += `Numeric columns (${metadata.numericColumns.length}): `;
+                const numericDetails = metadata.numericColumns.map(col => {
+                    const stats = metadata.sampleStats[col];
+                    if (stats && stats.min !== null && stats.max !== null) {
+                        return `${col} (${stats.min.toFixed(1)}-${stats.max.toFixed(1)})`;
+                    }
+                    return col;
+                }).join(', ');
+                prompt += numericDetails + '\n';
+            }
+
+            // Add categorical columns with top value
+            if (metadata.categoricalColumns.length > 0) {
+                prompt += `Categorical columns (${metadata.categoricalColumns.length}): `;
+                const catDetails = metadata.categoricalColumns.map(col => {
+                    const stats = metadata.sampleStats[col];
+                    if (stats && stats.unique) {
+                        return `${col} (${stats.unique} categories)`;
+                    }
+                    return col;
+                }).join(', ');
+                prompt += catDetails + '\n';
+            }
+
+            // Add text columns
+            if (metadata.textColumns.length > 0) {
+                prompt += `Text columns (${metadata.textColumns.length}): ${metadata.textColumns.join(', ')}\n`;
+            }
+
+            // Add datetime columns
+            if (metadata.datetimeColumns.length > 0) {
+                prompt += `Date/time columns (${metadata.datetimeColumns.length}): ${metadata.datetimeColumns.join(', ')}\n`;
+            }
+
+            prompt += `\nProvide a concise 2-3 sentence description of what this dataset appears to be about.`;
+
+            return prompt;
+        }
+
+        async function generateDatasetDescription(analysis) {
+            const contentDiv = document.getElementById('datasetDescriptionContent');
+
+            try {
+                // Show loading state
+                contentDiv.innerHTML = `
+                    <div class="dataset-description-loading">
+                        <div class="mini-spinner"></div>
+                        <span>Loading AI model (first time only, ~160MB)...</span>
+                    </div>
+                `;
+
+                // Load model
+                const model = await loadFLANT5Model();
+
+                contentDiv.innerHTML = `
+                    <div class="dataset-description-loading">
+                        <div class="mini-spinner"></div>
+                        <span>Generating description...</span>
+                    </div>
+                `;
+
+                // Extract metadata
+                const metadata = extractMetadataFromAnalysis(analysis);
+
+                // Build prompt
+                const prompt = buildPromptFromMetadata(metadata);
+                console.log('Prompt:', prompt);
+
+                // Generate description
+                const result = await model(prompt, {
+                    max_new_tokens: 100,
+                    temperature: 0.7,
+                    do_sample: false
+                });
+
+                const description = result[0].generated_text;
+                console.log('Generated description:', description);
+
+                // Display result
+                contentDiv.innerHTML = `
+                    <div class="dataset-description-text">
+                        ${description}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error generating dataset description:', error);
+                contentDiv.innerHTML = `
+                    <div class="dataset-description-text" style="color: var(--text-secondary);">
+                        Unable to generate AI description. ${error.message || 'Please try refreshing the page.'}
+                    </div>
+                `;
+            }
+        }
+
+        // Make the function available globally
+        window.generateDatasetDescription = generateDatasetDescription;
     </script>
 </body>
 </html>
