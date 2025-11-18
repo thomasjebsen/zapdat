@@ -31,26 +31,26 @@ def test_id_detection():
     print(f"\n{'DETECTED COLUMN TYPES (by TableAnalyzer)':^60}")
     print("-" * 60)
     for col, col_type in analyzer.column_types.items():
-        emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅'}
+        emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅', 'id': '🔑'}
         print(f"{emoji.get(col_type, '📊')} {col:<20} → {col_type}")
 
     # Verify expectations
     print(f"\n{'VERIFICATION':^60}")
     print("-" * 60)
 
-    # Numeric ID columns should be detected as categorical (not numeric)
-    expected_id_categorical = ['id', 'user_id', 'customer_id']
+    # ID columns should be detected as 'id' type (not numeric)
+    expected_id_columns = ['id', 'user_id', 'customer_id', 'ID_CODE']
     expected_numeric = ['age', 'revenue']
-    expected_text_or_categorical = ['name', 'ID_CODE']  # ID_CODE has text values, so text is fine
+    expected_text = ['name']
 
     all_passed = True
 
-    # Check numeric ID columns are categorical (not numeric)
-    for col in expected_id_categorical:
-        if analyzer.column_types[col] == 'categorical':
-            print(f"✓ '{col}' correctly detected as categorical (not numeric)")
+    # Check ID columns are detected as 'id' type
+    for col in expected_id_columns:
+        if analyzer.column_types[col] == 'id':
+            print(f"✓ '{col}' correctly detected as ID (not numeric)")
         else:
-            print(f"✗ '{col}' incorrectly detected as {analyzer.column_types[col]} (expected categorical)")
+            print(f"✗ '{col}' incorrectly detected as {analyzer.column_types[col]} (expected id)")
             all_passed = False
 
     # Check numeric columns are numeric
@@ -61,12 +61,12 @@ def test_id_detection():
             print(f"✗ '{col}' incorrectly detected as {analyzer.column_types[col]} (expected numeric)")
             all_passed = False
 
-    # Check text/categorical columns (both are fine for these)
-    for col in expected_text_or_categorical:
+    # Check text columns
+    for col in expected_text:
         if analyzer.column_types[col] in ['text', 'categorical']:
             print(f"✓ '{col}' correctly detected as {analyzer.column_types[col]}")
         else:
-            print(f"✗ '{col}' incorrectly detected as {analyzer.column_types[col]}")
+            print(f"✗ '{col}' incorrectly detected as {analyzer.column_types[col]} (expected text)")
             all_passed = False
 
     print("\n" + "=" * 60)

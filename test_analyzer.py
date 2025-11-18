@@ -26,7 +26,7 @@ def test_analyzer():
     print(f"\n{'DETECTED COLUMN TYPES':^60}")
     print("-" * 60)
     for col, col_type in analyzer.column_types.items():
-        emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅'}
+        emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅', 'id': '🔑'}
         print(f"{emoji.get(col_type, '📊')} {col:<20} → {col_type}")
 
     # Get overview
@@ -215,7 +215,7 @@ def generate_html_report(analysis):
 
     # Add column cards
     for col_name, col_data in analysis['columns'].items():
-        type_emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅'}
+        type_emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅', 'id': '🔑'}
         emoji = type_emoji.get(col_data['type'], '📊')
 
         html += f"""

@@ -48,9 +48,9 @@ class TableAnalyzer:
                 self.column_types[col] = "datetime"
             # Check for numeric (but not boolean)
             elif pd.api.types.is_numeric_dtype(self.df[col]):
-                # If column name suggests it's an ID, treat as categorical
+                # If column name suggests it's an ID, treat as ID type
                 if is_id_column:
-                    self.column_types[col] = "categorical"
+                    self.column_types[col] = "id"
                 # Check if it's actually just 0/1 values (boolean-like)
                 elif len(self.df[col].dropna().unique()) <= 2 and set(self.df[col].dropna().unique()).issubset({0, 1, 0.0, 1.0}):
                     self.column_types[col] = "categorical"
@@ -59,7 +59,11 @@ class TableAnalyzer:
             else:
                 # Check if it's categorical (low cardinality)
                 unique_ratio = self.df[col].nunique() / len(self.df)
-                if unique_ratio < 0.5:  # Less than 50% unique values
+
+                # If column name suggests it's an ID (even if text-based), mark as ID
+                if is_id_column:
+                    self.column_types[col] = "id"
+                elif unique_ratio < 0.5:  # Less than 50% unique values
                     self.column_types[col] = "categorical"
                 else:
                     self.column_types[col] = "text"
@@ -215,7 +219,7 @@ class TableAnalyzer:
         elif unique_ratio < 0.9:
             diversity = "High diversity"
         else:
-            diversity = "Very high diversity (might be ID/text)"
+            diversity = "Very high diversity"
 
         # Smart cutoff rules based on cardinality
         if unique_count <= 10:
@@ -338,6 +342,107 @@ class TableAnalyzer:
             "samples": samples
         }
 
+    def analyze_id(self, column: str) -> Dict[str, Any]:
+        """Analyze an ID column with uniqueness and format detection"""
+        data = self.df[column].dropna()
+
+        # Handle empty data
+        if len(data) == 0:
+            stats = {
+                "count": 0,
+                "unique": 0,
+                "missing": safe_int(self.df[column].isnull().sum()),
+                "uniqueness_pct": 0,
+                "is_unique": False,
+                "format_type": "N/A",
+                "potential_primary_key": False
+            }
+            return {"stats": stats, "samples": []}
+
+        # Calculate uniqueness
+        unique_count = data.nunique()
+        total_count = len(data)
+        uniqueness_pct = (unique_count / total_count * 100) if total_count > 0 else 0
+        is_unique = (unique_count == total_count)
+
+        # Determine if it could be a primary key (unique + no missing values)
+        missing_count = self.df[column].isnull().sum()
+        potential_primary_key = is_unique and missing_count == 0
+
+        # Detect format type
+        data_str = data.astype(str)
+        if pd.api.types.is_numeric_dtype(self.df[column]):
+            # Check if sequential
+            try:
+                numeric_data = pd.to_numeric(data, errors='coerce').dropna().sort_values()
+                if len(numeric_data) > 1:
+                    diffs = numeric_data.diff().dropna()
+                    is_sequential = (diffs == 1).all()
+                    if is_sequential:
+                        format_type = "Sequential numeric (1, 2, 3, ...)"
+                    else:
+                        format_type = "Numeric ID"
+                else:
+                    format_type = "Numeric ID"
+            except:
+                format_type = "Numeric ID"
+        elif data_str.str.match(r'^\d+$').sum() > len(data) * 0.8:
+            format_type = "Numeric (as text)"
+        elif data_str.str.match(r'^[A-Z0-9]{8,}$').sum() > len(data) * 0.8:
+            format_type = "Uppercase alphanumeric (UUID-like)"
+        elif data_str.str.match(r'^[a-z0-9-]+$').sum() > len(data) * 0.8:
+            format_type = "Lowercase alphanumeric with dashes"
+        elif data_str.str.match(r'^[A-Z]{2,}\d+$').sum() > len(data) * 0.8:
+            format_type = "Prefixed code (e.g., ABC123)"
+        else:
+            format_type = "Mixed format"
+
+        # Get sample values (first 5 unique)
+        samples = data_str.unique()[:5].tolist()
+
+        # Calculate range for numeric IDs
+        id_range = None
+        if pd.api.types.is_numeric_dtype(self.df[column]):
+            id_range = f"{safe_int(data.min())} - {safe_int(data.max())}"
+
+        stats = {
+            "count": safe_int(total_count),
+            "unique": safe_int(unique_count),
+            "missing": safe_int(missing_count),
+            "uniqueness_pct": safe_float(uniqueness_pct),
+            "is_unique": is_unique,
+            "format_type": format_type,
+            "potential_primary_key": potential_primary_key,
+            "id_range": id_range
+        }
+
+        result = {
+            "stats": stats,
+            "samples": samples
+        }
+
+        # Only add chart for non-unique IDs with reasonable cardinality
+        if not is_unique and unique_count <= 50:
+            try:
+                value_counts = data.value_counts().head(15)
+                fig = px.bar(
+                    x=value_counts.index.astype(str),
+                    y=value_counts.values,
+                    title=f"Duplicate ID Frequency: {column}",
+                    labels={'x': column, 'y': 'Count'},
+                )
+                fig.update_layout(
+                    showlegend=False,
+                    hovermode='x unified',
+                    xaxis_title=column,
+                    yaxis_title="Occurrences"
+                )
+                result["plot"] = fig.to_json()
+            except:
+                pass
+
+        return result
+
     def analyze_datetime(self, column: str) -> Dict[str, Any]:
         """Analyze a datetime column"""
         data = self.df[column].dropna()
@@ -419,6 +524,11 @@ class TableAnalyzer:
                 column_analysis[col] = {
                     "type": col_type,
                     "analysis": self.analyze_datetime(col)
+                }
+            elif col_type == "id":
+                column_analysis[col] = {
+                    "type": col_type,
+                    "analysis": self.analyze_id(col)
                 }
             else:  # text
                 column_analysis[col] = {
