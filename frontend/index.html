@@ -1069,30 +1069,64 @@
             }, 3000);
         }
 
-        // Copy number to clipboard and show feedback
+        // Copy number to clipboard and show feedback (inline numbers)
         function copyToClipboard(value, element) {
             console.log('copyToClipboard called with value:', value);
-            navigator.clipboard.writeText(value).then(() => {
-                // Show visual feedback on the element
+
+            const showSuccess = () => {
                 const originalText = element.textContent;
                 const originalTitle = element.title;
                 element.textContent = '✓';
                 element.title = 'Copied!';
                 element.style.color = '#10b981';
 
-                // Reset after 1 second
                 setTimeout(() => {
                     element.textContent = originalText;
                     element.title = originalTitle;
                     element.style.color = '';
                 }, 1000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                alert('Failed to copy: ' + err.message);
-            });
+            };
+
+            // Try modern Clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(value).then(() => {
+                    showSuccess();
+                }).catch(err => {
+                    console.error('Clipboard API failed:', err);
+                    // Try fallback
+                    if (fallbackCopySimple(value)) {
+                        showSuccess();
+                    }
+                });
+            } else {
+                // Use fallback method
+                if (fallbackCopySimple(value)) {
+                    showSuccess();
+                }
+            }
         }
 
-        // Copy stat value from card
+        // Simple fallback copy (returns boolean)
+        function fallbackCopySimple(text) {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.pointerEvents = 'none';
+                document.body.appendChild(textarea);
+                textarea.select();
+                textarea.setSelectionRange(0, 99999);
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return successful;
+            } catch (err) {
+                console.error('Fallback copy error:', err);
+                return false;
+            }
+        }
+
+        // Copy stat value from card (with fallback for non-HTTPS)
         window.copyStatValue = function(value, event) {
             console.log('copyStatValue called!', 'value:', value, 'event:', event);
 
@@ -1103,22 +1137,53 @@
             const rawValue = value.toString();
             console.log('Attempting to copy:', rawValue);
 
-            // Check if clipboard API is available
-            if (!navigator.clipboard) {
-                console.error('Clipboard API not available');
-                alert('Clipboard API not available. Please use HTTPS or localhost.');
-                return;
+            // Try modern Clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(rawValue).then(() => {
+                    console.log('Copy successful (Clipboard API)!');
+                    showCopyToast(value, true);
+                }).catch(err => {
+                    console.error('Clipboard API failed:', err);
+                    // Fallback to execCommand
+                    fallbackCopy(rawValue, value);
+                });
+            } else {
+                // Use fallback method
+                console.log('Clipboard API not available, using fallback');
+                fallbackCopy(rawValue, value);
             }
-
-            navigator.clipboard.writeText(rawValue).then(() => {
-                console.log('Copy successful!');
-                showCopyToast(value, true);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                showCopyToast(value, false);
-                alert('Copy failed: ' + err.message);
-            });
         };
+
+        // Fallback copy method using execCommand
+        function fallbackCopy(text, originalValue) {
+            try {
+                // Create temporary textarea
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                textarea.style.pointerEvents = 'none';
+                document.body.appendChild(textarea);
+
+                // Select and copy
+                textarea.select();
+                textarea.setSelectionRange(0, 99999); // For mobile devices
+
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                if (successful) {
+                    console.log('Copy successful (fallback method)!');
+                    showCopyToast(originalValue, true);
+                } else {
+                    console.error('Fallback copy failed');
+                    showCopyToast(originalValue, false);
+                }
+            } catch (err) {
+                console.error('Fallback copy error:', err);
+                showCopyToast(originalValue, false);
+            }
+        }
 
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
