@@ -14,4 +14,4 @@ pytest==7.4.3
 openpyxl==3.1.2       # Excel (.xlsx)
 xlrd==2.0.1           # Excel (.xls)
 pyarrow==14.0.1       # Parquet, Feather, ORC
-tables==3.9.2         # HDF5
+# tables==3.9.2       # HDF5 (requires: brew install hdf5 c-blosc)
