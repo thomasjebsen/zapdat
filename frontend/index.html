@@ -929,7 +929,10 @@
             }
 
             const abbreviated = abbreviateNumber(num);
-            const fullValue = Number.isInteger(num) ? num.toLocaleString() : num.toFixed(2);
+            // Format full value for display in tooltip
+            const fullValue = Number.isInteger(num)
+                ? num.toLocaleString()
+                : num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const rawValue = num.toString();
 
             // Only add tooltip and click-to-copy if number was actually abbreviated
@@ -1123,9 +1126,12 @@
                     if (value === null || value === undefined) {
                         return 'N/A';
                     } else if (typeof value === 'number') {
-                        return Number.isInteger(value) ?
-                            formatNumberWithTooltip(value) :
-                            value.toFixed(2);
+                        // Abbreviate large numbers (both integers and decimals)
+                        if (Math.abs(value) >= 1000) {
+                            return formatNumberWithTooltip(value);
+                        }
+                        // For small numbers, show with appropriate precision
+                        return Number.isInteger(value) ? value.toString() : value.toFixed(2);
                     } else {
                         return value;
                     }
