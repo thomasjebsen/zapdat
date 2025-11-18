@@ -29,9 +29,17 @@ def test_analyzer():
     # Print detected types
     print(f"\n{'DETECTED COLUMN TYPES':^60}")
     print("-" * 60)
-    for col, col_type in analyzer.column_types.items():
+    for col, col_info in analyzer.column_types.items():
         emoji = {"numeric": "🔢", "categorical": "🏷️", "text": "📝", "datetime": "📅"}
-        print(f"{emoji.get(col_type, '📊')} {col:<20} → {col_type}")
+        col_type = col_info["type"]
+        semantic_type = col_info.get("semantic_type")
+        confidence = col_info.get("confidence", 1.0)
+
+        type_str = f"{col_type}"
+        if semantic_type:
+            type_str += f" ({semantic_type}, {confidence:.1%})"
+
+        print(f"{emoji.get(col_type, '📊')} {col:<20} → {type_str}")
 
     # Get overview
     overview = analyzer.get_overview()

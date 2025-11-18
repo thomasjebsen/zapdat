@@ -3,10 +3,50 @@ Data analysis module for automatic EDA
 """
 
 import math
+import re
 from typing import Any
 
 import pandas as pd
 import plotly.express as px
+
+
+# Semantic type detection patterns
+SEMANTIC_PATTERNS = {
+    "email": r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+    "url": r"^https?://[\w\-\.]+(:\d+)?(/[\w\-\./?%&=]*)?$",
+    "phone": r"^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$",
+    "currency": r"^[\$€£¥₹]?\s*-?\d{1,3}(,?\d{3})*(\.\d{2})?(\s*[\$€£¥₹])?$",
+    "percentage": r"^-?\d+(\.\d+)?%$",
+    "uuid": r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+    "ipv4": r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+    "ipv6": r"^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2})$",
+    "postal_code_us": r"^\d{5}(-\d{4})?$",
+    "postal_code_uk": r"^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$",
+    "postal_code_ca": r"^[A-Z]\d[A-Z]\s?\d[A-Z]\d$",
+    "credit_card": r"^(\*{12}\d{4}|\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4})$",
+    "boolean_text": r"^(true|false|yes|no|y|n|t|f|0|1)$",
+    "iso_date": r"^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$",
+    "us_date": r"^(0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])[-/]\d{2,4}$",
+    "eu_date": r"^(0?[1-9]|[12]\d|3[01])[-/.](0?[1-9]|1[0-2])[-/.]\d{2,4}$",
+}
+
+# Datetime parsing formats
+DATETIME_FORMATS = [
+    "%Y-%m-%d",  # 2024-01-15
+    "%Y-%m-%dT%H:%M:%S",  # 2024-01-15T10:30:00
+    "%Y-%m-%dT%H:%M:%S.%f",  # 2024-01-15T10:30:00.123
+    "%Y-%m-%dT%H:%M:%SZ",  # 2024-01-15T10:30:00Z
+    "%m/%d/%Y",  # 01/15/2024
+    "%m-%d-%Y",  # 01-15-2024
+    "%d/%m/%Y",  # 15/01/2024
+    "%d-%m-%Y",  # 15-01-2024
+    "%d.%m.%Y",  # 15.01.2024
+    "%b %d, %Y",  # Jan 15, 2024
+    "%B %d, %Y",  # January 15, 2024
+    "%d %b %Y",  # 15 Jan 2024
+    "%d %B %Y",  # 15 January 2024
+    "%Y/%m/%d",  # 2024/01/15
+]
 
 
 def safe_float(value):
@@ -31,30 +71,229 @@ class TableAnalyzer:
         self.column_types = {}
         self._detect_types()
 
+    def _detect_semantic_type(self, column: pd.Series) -> tuple[str | None, float]:
+        """
+        Detect semantic type of a column using pattern matching.
+
+        Returns:
+            tuple: (semantic_type, confidence_score)
+                - semantic_type: The detected semantic type or None
+                - confidence_score: Float between 0.0-1.0 indicating match percentage
+        """
+        # Skip empty columns
+        if len(column) == 0:
+            return None, 0.0
+
+        # Sample up to 500 non-null values for performance
+        sample_data = column.dropna().astype(str).head(500)
+
+        if len(sample_data) == 0:
+            return None, 0.0
+
+        sample_size = len(sample_data)
+
+        # Define pattern priority order (more specific patterns first)
+        # This prevents phone pattern from matching IPs, etc.
+        pattern_order = [
+            "uuid",
+            "email",
+            "url",
+            "credit_card",
+            "ipv4",
+            "ipv6",
+            "iso_date",
+            "us_date",
+            "eu_date",
+            "postal_code_us",
+            "postal_code_uk",
+            "postal_code_ca",
+            "percentage",
+            "currency",
+            "boolean_text",
+            "phone",  # Phone last because it's very permissive
+        ]
+
+        # Test patterns in priority order
+        for semantic_type in pattern_order:
+            pattern = SEMANTIC_PATTERNS[semantic_type]
+            try:
+                # Count matches (case-insensitive for boolean_text and postal codes)
+                if semantic_type in ["boolean_text", "postal_code_uk", "postal_code_ca"]:
+                    matches = sample_data.str.match(pattern, case=False, flags=re.IGNORECASE).sum()
+                else:
+                    matches = sample_data.str.match(pattern, case=True).sum()
+
+                confidence = matches / sample_size
+
+                # Return first pattern that meets threshold (>= 70%)
+                if confidence >= 0.7:
+                    return semantic_type, confidence
+            except Exception:
+                # Skip pattern if regex matching fails
+                continue
+
+        return None, 0.0
+
+    def _try_parse_datetime(self, column: pd.Series) -> tuple[pd.Series | None, float]:
+        """
+        Attempt to parse a column as datetime using multiple formats.
+
+        Returns:
+            tuple: (parsed_series, confidence_score)
+                - parsed_series: Successfully parsed datetime Series or None
+                - confidence_score: Float between 0.0-1.0 indicating success rate
+        """
+        # Skip if already datetime
+        if pd.api.types.is_datetime64_any_dtype(column):
+            return column, 1.0
+
+        # Sample non-null values
+        sample_data = column.dropna().head(500)
+
+        if len(sample_data) == 0:
+            return None, 0.0
+
+        sample_size = len(sample_data)
+        best_parsed = None
+        best_confidence = 0.0
+
+        # Try pandas default parsing first
+        try:
+            parsed = pd.to_datetime(column, errors='coerce')
+            valid_count = parsed.notna().sum()
+            confidence = valid_count / len(column.dropna()) if len(column.dropna()) > 0 else 0.0
+
+            if confidence > best_confidence:
+                best_confidence = confidence
+                best_parsed = parsed
+        except Exception:
+            pass
+
+        # Try each format explicitly
+        for fmt in DATETIME_FORMATS:
+            try:
+                parsed = pd.to_datetime(column, format=fmt, errors='coerce')
+                valid_count = parsed.notna().sum()
+                confidence = valid_count / len(column.dropna()) if len(column.dropna()) > 0 else 0.0
+
+                if confidence > best_confidence:
+                    best_confidence = confidence
+                    best_parsed = parsed
+            except Exception:
+                continue
+
+        # Return parsed series if confidence is above 70%
+        if best_confidence >= 0.7:
+            return best_parsed, best_confidence
+
+        return None, best_confidence
+
     def _detect_types(self):
-        """Detect the type of each column"""
+        """Detect the type of each column with semantic pattern recognition"""
         for col in self.df.columns:
+            base_type = None
+            semantic_type = None
+            confidence = 1.0
+            non_null_count = self.df[col].count()
+            unique_count = self.df[col].nunique()
+
             # Check for boolean type first
             if pd.api.types.is_bool_dtype(self.df[col]):
-                self.column_types[col] = "categorical"
+                base_type = "categorical"
+                semantic_type = "boolean"
+
             # Check for datetime
             elif pd.api.types.is_datetime64_any_dtype(self.df[col]):
-                self.column_types[col] = "datetime"
+                base_type = "datetime"
+
             # Check for numeric (but not boolean)
             elif pd.api.types.is_numeric_dtype(self.df[col]):
                 # Check if it's actually just 0/1 values (boolean-like)
                 unique_vals = self.df[col].dropna().unique()
                 if len(unique_vals) <= 2 and set(unique_vals).issubset({0, 1}):
-                    self.column_types[col] = "categorical"
+                    base_type = "categorical"
+                    semantic_type = "boolean"
                 else:
-                    self.column_types[col] = "numeric"
+                    # Check if numeric column might be a semantic type (e.g., postal code)
+                    detected_semantic, sem_confidence = self._detect_semantic_type(self.df[col])
+
+                    if detected_semantic == "postal_code_us":
+                        # Postal codes should be treated as categorical/text
+                        base_type = "categorical"
+                        semantic_type = detected_semantic
+                        confidence = sem_confidence
+                    else:
+                        base_type = "numeric"
+
             else:
-                # Check if it's categorical (low cardinality)
-                unique_ratio = self.df[col].nunique() / len(self.df)
-                if unique_ratio < 0.5:  # Less than 50% unique values
-                    self.column_types[col] = "categorical"
+                # Non-numeric, non-datetime column - could be text, categorical, or datetime string
+                # First, try to detect semantic types
+                detected_semantic, sem_confidence = self._detect_semantic_type(self.df[col])
+
+                # Check if it's a datetime string
+                if detected_semantic in ["iso_date", "us_date", "eu_date"]:
+                    parsed_datetime, dt_confidence = self._try_parse_datetime(self.df[col])
+                    if parsed_datetime is not None:
+                        # Replace the column with parsed datetime
+                        self.df[col] = parsed_datetime
+                        base_type = "datetime"
+                        semantic_type = detected_semantic
+                        confidence = dt_confidence
+                    else:
+                        base_type = "text"
+                        semantic_type = detected_semantic
+                        confidence = sem_confidence
+
+                # Check for boolean text patterns
+                elif detected_semantic == "boolean_text":
+                    base_type = "categorical"
+                    semantic_type = "boolean_text"
+                    confidence = sem_confidence
+
+                # Check for other semantic types
+                elif detected_semantic is not None:
+                    # Determine if it should be categorical or text based on cardinality
+                    unique_ratio = unique_count / non_null_count if non_null_count > 0 else 0
+
+                    # Enhanced categorical detection logic
+                    if unique_count < 50 or unique_ratio < 0.5:
+                        base_type = "categorical"
+                    else:
+                        base_type = "text"
+
+                    semantic_type = detected_semantic
+                    confidence = sem_confidence
+
                 else:
-                    self.column_types[col] = "text"
+                    # No semantic pattern detected - use cardinality-based detection
+                    unique_ratio = unique_count / non_null_count if non_null_count > 0 else 0
+
+                    # Enhanced categorical detection with multiple heuristics
+                    is_categorical = False
+
+                    # Rule 1: Low unique count (< 50 values)
+                    if unique_count < 50:
+                        is_categorical = True
+
+                    # Rule 2: Low diversity (< 50% unique)
+                    elif unique_ratio < 0.5:
+                        is_categorical = True
+
+                    # Rule 3: Medium cardinality with low diversity (< 100 values and < 30% unique)
+                    elif unique_count < 100 and unique_ratio < 0.3:
+                        is_categorical = True
+
+                    if is_categorical:
+                        base_type = "categorical"
+                    else:
+                        base_type = "text"
+
+            # Store type information
+            self.column_types[col] = {
+                "type": base_type,
+                "semantic_type": semantic_type,
+                "confidence": confidence,
+            }
 
     def get_overview(self) -> dict[str, Any]:
         """Get basic dataset overview"""
@@ -62,7 +301,7 @@ class TableAnalyzer:
             "rows": len(self.df),
             "columns": len(self.df.columns),
             "column_names": list(self.df.columns),
-            "column_types": self.column_types,
+            "column_types": self.column_types,  # Now includes type, semantic_type, confidence
             "missing_values": self.df.isnull().sum().to_dict(),
             "duplicates": int(self.df.duplicated().sum()),
         }
@@ -377,15 +616,27 @@ class TableAnalyzer:
         column_analysis = {}
 
         for col in self.df.columns:
-            col_type = self.column_types[col]
+            col_info = self.column_types[col]
+            col_type = col_info["type"]
+            semantic_type = col_info.get("semantic_type")
+            confidence = col_info.get("confidence", 1.0)
 
+            # Perform type-specific analysis
             if col_type == "numeric":
-                column_analysis[col] = {"type": col_type, "analysis": self.analyze_numeric(col)}
+                analysis = self.analyze_numeric(col)
             elif col_type == "categorical":
-                column_analysis[col] = {"type": col_type, "analysis": self.analyze_categorical(col)}
+                analysis = self.analyze_categorical(col)
             elif col_type == "datetime":
-                column_analysis[col] = {"type": col_type, "analysis": self.analyze_datetime(col)}
+                analysis = self.analyze_datetime(col)
             else:  # text
-                column_analysis[col] = {"type": col_type, "analysis": self.analyze_text(col)}
+                analysis = self.analyze_text(col)
+
+            # Add type information to the analysis
+            column_analysis[col] = {
+                "type": col_type,
+                "semantic_type": semantic_type,
+                "confidence": safe_float(confidence),
+                "analysis": analysis,
+            }
 
         return {"overview": overview, "columns": column_analysis}
