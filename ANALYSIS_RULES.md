@@ -6,6 +6,16 @@ This document outlines the comprehensive rules and logic for how different data 
 
 The analyzer now provides type-specific analysis with smart cutoffs, outlier detection, and meaningful statistics tailored to each data type.
 
+### Supported File Formats
+
+The application supports a wide range of data file formats:
+- **Tabular**: CSV, TSV, Excel (.xlsx, .xls)
+- **JSON**: Structured JSON data
+- **Big Data**: Parquet, Feather, ORC
+- **Python**: Pickle (.pkl, .pickle)
+- **Databases**: SQLite (.db, .sqlite, .sqlite3)
+- **Scientific**: HDF5 (.h5, .hdf5)
+
 ---
 
 ## 1. CATEGORICAL Data
@@ -184,6 +194,25 @@ Automatically detects common patterns:
 - **Larger chart area**: Minimum 400px height for better visualization
 - **Clean hierarchy**: Reduces cognitive load, focuses on key insights
 
+### 7. Custom Chart Builder
+- **Interactive chart creation**: Users can build custom visualizations beyond auto-generated charts
+- **Multiple chart types supported**:
+  - Scatter Plot: X vs Y correlation with optional color/size encoding
+  - Line Chart: Trends over time or continuous data
+  - Box Plot: Compare distributions across multiple columns
+  - Violin Plot: Distribution density visualization
+  - Heatmap: Correlation matrix for all numeric columns
+  - Pie Chart: Proportional breakdown of categories (with top N limit)
+  - Bar Chart: Compare values across categories
+- **Visual color schemes**: 10 pre-designed color palettes with live previews
+  - Scientific: viridis, plasma, inferno
+  - Sequential: blues, purples
+  - Thematic: ocean, sunset, rainbow
+  - Categorical: pastel, bold
+- **Real-time updates**: Charts regenerate instantly when options change
+- **Smart column filtering**: Only relevant columns shown for each chart type
+- **Form-based interface**: Intuitive dropdowns and selectors for chart configuration
+
 ---
 
 ## Example Use Cases
@@ -220,10 +249,12 @@ Automatically detects common patterns:
 ## Future Enhancements
 
 Potential improvements to consider:
-1. **Correlation analysis** between numerical columns
-2. **Automatic anomaly detection** beyond basic outliers
-3. **Suggested data transformations** (e.g., log scale for skewed data)
-4. **Export capabilities** for analysis results
-5. **Custom thresholds** for outlier/cardinality rules
-6. **Geospatial detection** for coordinates or addresses
-7. **Time series analysis** for datetime columns
+1. ~~**Correlation analysis** between numerical columns~~ ✅ **IMPLEMENTED** (via Custom Chart Builder heatmap)
+2. ~~**Multi-file format support**~~ ✅ **IMPLEMENTED** (CSV, Excel, JSON, Parquet, Feather, Pickle, SQLite, HDF5, ORC)
+3. **Automatic anomaly detection** beyond basic outliers
+4. **Suggested data transformations** (e.g., log scale for skewed data)
+5. **Export capabilities** for analysis results (PDF/HTML reports)
+6. **Custom thresholds** for outlier/cardinality rules
+7. **Geospatial detection** for coordinates or addresses
+8. **Enhanced time series analysis** for datetime columns (seasonality, trends)
+9. **Client-side processing** with danfo.js for privacy-first analysis (in roadmap)
