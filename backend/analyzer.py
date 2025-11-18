@@ -348,14 +348,16 @@ class TableAnalyzer:
 
         # Handle empty data
         if len(data) == 0:
+            missing_count = safe_int(self.df[column].isnull().sum())
             stats = {
                 "count": 0,
                 "unique": 0,
-                "missing": safe_int(self.df[column].isnull().sum()),
+                "missing": missing_count,
                 "uniqueness_pct": 0,
                 "is_unique": False,
                 "format_type": "N/A",
-                "potential_primary_key": False
+                "potential_primary_key": False,
+                "primary_key_status": f"✗ All values missing ({missing_count} missing)" if missing_count > 0 else "✗ No data"
             }
             return {"stats": stats, "samples": []}
 
@@ -368,6 +370,18 @@ class TableAnalyzer:
         # Determine if it could be a primary key (unique + no missing values)
         missing_count = self.df[column].isnull().sum()
         potential_primary_key = is_unique and missing_count == 0
+
+        # Generate helpful primary key status message
+        if potential_primary_key:
+            primary_key_status = "✓ Suitable as primary key"
+        elif not is_unique and missing_count == 0:
+            duplicate_count = total_count - unique_count
+            primary_key_status = f"✗ Has {duplicate_count} duplicate values"
+        elif is_unique and missing_count > 0:
+            primary_key_status = f"✗ Has {missing_count} missing values"
+        else:
+            duplicate_count = total_count - unique_count
+            primary_key_status = f"✗ Has {duplicate_count} duplicates and {missing_count} missing values"
 
         # Detect format type
         data_str = data.astype(str)
@@ -400,11 +414,6 @@ class TableAnalyzer:
         # Get sample values (first 5 unique)
         samples = data_str.unique()[:5].tolist()
 
-        # Calculate range for numeric IDs
-        id_range = None
-        if pd.api.types.is_numeric_dtype(self.df[column]):
-            id_range = f"{safe_int(data.min())} - {safe_int(data.max())}"
-
         stats = {
             "count": safe_int(total_count),
             "unique": safe_int(unique_count),
@@ -413,7 +422,7 @@ class TableAnalyzer:
             "is_unique": is_unique,
             "format_type": format_type,
             "potential_primary_key": potential_primary_key,
-            "id_range": id_range
+            "primary_key_status": primary_key_status
         }
 
         result = {
