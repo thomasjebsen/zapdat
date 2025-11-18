@@ -71,25 +71,60 @@
         /* Header */
         header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
             animation: fadeInDown 0.8s ease;
         }
 
         .logo {
-            font-size: 3.5rem;
+            font-size: 4rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
             letter-spacing: -0.02em;
         }
 
         .tagline {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .description {
+            font-size: 1.125rem;
             color: var(--text-secondary);
-            font-weight: 300;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            line-height: 1.7;
+        }
+
+        .hero-badges {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .badge-icon {
+            font-size: 1.125rem;
         }
 
         /* Upload Section */
@@ -427,6 +462,133 @@
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-10px); }
             75% { transform: translateX(10px); }
+        }
+
+        /* Features Section */
+        .features-section {
+            margin-bottom: 4rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .feature-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .feature-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .feature-card:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px -4px var(--shadow);
+            border-color: var(--border-secondary);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* Examples Section */
+        .examples-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .example-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .example-item:hover {
+            border-color: #6366f1;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        }
+
+        .example-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6366f1;
+            margin-bottom: 0.5rem;
+        }
+
+        .example-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .example-description {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
         }
 
         /* Results */
@@ -879,7 +1041,25 @@
     <div class="container">
         <header>
             <div class="logo">zapdat</div>
-            <p class="tagline">Instant insights from your data. Fast. Private. Client-side.</p>
+            <h1 class="tagline">Instant insights from your CSV data</h1>
+            <p class="description">
+                Upload your CSV file and get powerful analytics in seconds. No setup, no coding, no data ever leaves your browser.
+                Just drag, drop, and discover what your data is telling you.
+            </p>
+            <div class="hero-badges">
+                <span class="badge">
+                    <span class="badge-icon">🔒</span>
+                    <span>100% Client-Side</span>
+                </span>
+                <span class="badge">
+                    <span class="badge-icon">⚡</span>
+                    <span>Instant Analysis</span>
+                </span>
+                <span class="badge">
+                    <span class="badge-icon">📊</span>
+                    <span>Smart Visualizations</span>
+                </span>
+            </div>
         </header>
 
         <div class="upload-section">
@@ -917,6 +1097,100 @@
 
             <div class="error" id="error"></div>
         </div>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="section-header">
+                <h2 class="section-title">What You'll Get</h2>
+                <p class="section-subtitle">Powerful analytics made simple. No data science degree required.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🎯</span>
+                    <h3 class="feature-title">Automatic Type Detection</h3>
+                    <p class="feature-description">
+                        Smart identification of numeric, categorical, text, and datetime columns.
+                        We handle the complexity so you don't have to.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📈</span>
+                    <h3 class="feature-title">Essential Statistics</h3>
+                    <p class="feature-description">
+                        Mean, median, standard deviation, quartiles, and more. Get the stats that actually matter,
+                        presented clearly and beautifully.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎨</span>
+                    <h3 class="feature-title">Interactive Visualizations</h3>
+                    <p class="feature-description">
+                        Histograms, bar charts, scatter plots, and correlation matrices.
+                        All rendered instantly with professional-grade Plotly charts.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🔍</span>
+                    <h3 class="feature-title">Data Quality Insights</h3>
+                    <p class="feature-description">
+                        Spot missing values, duplicates, and outliers at a glance.
+                        Know exactly what you're working with before diving deeper.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Examples Section -->
+        <section class="examples-section">
+            <div class="section-header">
+                <h2 class="section-title">Perfect For</h2>
+                <p class="section-subtitle">From quick data checks to deep analysis, zapdat has you covered</p>
+            </div>
+            <div class="examples-grid">
+                <div class="example-item">
+                    <div class="example-label">Sales Data</div>
+                    <div class="example-title">Revenue Analysis</div>
+                    <p class="example-description">
+                        Upload your sales CSV and instantly see trends, top products, and revenue distributions by category or region.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Marketing</div>
+                    <div class="example-title">Campaign Performance</div>
+                    <p class="example-description">
+                        Track conversion rates, identify best-performing channels, and spot anomalies in your marketing data.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Customer Data</div>
+                    <div class="example-title">User Behavior</div>
+                    <p class="example-description">
+                        Analyze user demographics, engagement patterns, and retention metrics without writing a single line of code.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Financial</div>
+                    <div class="example-title">Expense Tracking</div>
+                    <p class="example-description">
+                        Get instant breakdowns of spending by category, identify outliers, and visualize budget allocation.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Scientific</div>
+                    <div class="example-title">Research Data</div>
+                    <p class="example-description">
+                        Quick exploratory analysis of experimental results, correlation studies, and distribution analysis.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Operations</div>
+                    <div class="example-title">Performance Metrics</div>
+                    <p class="example-description">
+                        Monitor KPIs, track system performance, and identify bottlenecks in your operational data.
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <div class="chart-builder" id="chartBuilder">
             <div class="builder-card">
