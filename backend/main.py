@@ -1,14 +1,16 @@
 """
 FastAPI backend for Table EDA Analyzer
 """
-from fastapi import FastAPI, File, UploadFile, HTTPException, Body
+import logging
+from io import StringIO
+from typing import List, Optional
+
+import pandas as pd
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import Optional, List
-import pandas as pd
-from io import StringIO
+
 from analyzer import TableAnalyzer
 from visualizations import ChartGenerator
 from file_reader import MultiFormatReader, FileFormatError
@@ -41,24 +43,36 @@ async def analyze_file(file: UploadFile = File(...)):
     Upload a data file and get automatic EDA analysis
     Supports: CSV, Excel, JSON, TSV, Parquet, Feather, Pickle, SQLite, HDF5, ORC
     """
+    logger = logging.getLogger("uvicorn")
+
+    logger.info(f"Received file: {file.filename}, content_type: {file.content_type}")
+
     # Validate file type
     if not MultiFormatReader.is_supported(file.filename):
-        supported = ', '.join(MultiFormatReader.get_supported_formats())
+        supported = ", ".join(MultiFormatReader.get_supported_formats())
+        logger.warning(f"Rejected unsupported file: {file.filename}")
         raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file format. Supported formats: {supported}"
+            status_code=400, detail=f"Unsupported file format. Supported formats: {supported}"
         )
 
     try:
         # Read file content
         contents = await file.read()
+        logger.info(f"Read {len(contents)} bytes from {file.filename}")
+
+        if len(contents) == 0:
+            logger.warning(f"Empty file uploaded: {file.filename}")
+            raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
         # Parse file using MultiFormatReader
         df = MultiFormatReader.read_file(contents, file.filename)
 
         # Check if dataframe is empty
         if df.empty:
+            logger.warning(f"File parsed but dataframe is empty: {file.filename}")
             raise HTTPException(status_code=400, detail="File is empty or contains no data")
+
+        logger.info(f"Successfully parsed {file.filename}, shape: {df.shape}")
 
         # Store dataframe in cache with filename as key
         cache_key = file.filename
@@ -67,6 +81,8 @@ async def analyze_file(file: UploadFile = File(...)):
         # Analyze the data
         analyzer = TableAnalyzer(df)
         analysis = analyzer.analyze_all()
+
+        logger.info(f"Analysis complete for {file.filename}")
 
         return {
             "status": "success",
@@ -77,12 +93,22 @@ async def analyze_file(file: UploadFile = File(...)):
         }
 
     except FileFormatError as e:
+        logger.error(f"FileFormatError for {file.filename}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except pd.errors.EmptyDataError:
+        logger.error(f"EmptyDataError for {file.filename}")
         raise HTTPException(status_code=400, detail="File is empty or invalid")
     except pd.errors.ParserError as e:
+        logger.error(f"ParserError for {file.filename}: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error parsing file: {str(e)}")
+    except UnicodeDecodeError as e:
+        logger.error(f"UnicodeDecodeError for {file.filename}: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail="File encoding error. Please ensure the file is UTF-8 encoded.",
+        )
     except Exception as e:
+        logger.error(f"Unexpected error analyzing {file.filename}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error analyzing file: {str(e)}")
 
 
