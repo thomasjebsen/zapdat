@@ -49,8 +49,10 @@ def test_analyzer():
             print(f"{key:<15} → N/A")
         elif isinstance(value, int):
             print(f"{key:<15} → {value:>10,}")
-        else:
+        elif isinstance(value, float):
             print(f"{key:<15} → {value:>10.2f}")
+        else:
+            print(f"{key:<15} → {value}")
 
     # Test categorical analysis
     print(f"\n{'CATEGORICAL ANALYSIS: department':^60}")

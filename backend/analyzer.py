@@ -35,6 +35,11 @@ class TableAnalyzer:
     def _detect_types(self):
         """Detect the type of each column"""
         for col in self.df.columns:
+            col_lower = col.lower()
+
+            # Check for ID columns (columns with 'id' at start or end)
+            is_id_column = col_lower.startswith('id') or col_lower.endswith('id')
+
             # Check for boolean type first
             if pd.api.types.is_bool_dtype(self.df[col]):
                 self.column_types[col] = "categorical"
@@ -43,9 +48,11 @@ class TableAnalyzer:
                 self.column_types[col] = "datetime"
             # Check for numeric (but not boolean)
             elif pd.api.types.is_numeric_dtype(self.df[col]):
+                # If column name suggests it's an ID, treat as categorical
+                if is_id_column:
+                    self.column_types[col] = "categorical"
                 # Check if it's actually just 0/1 values (boolean-like)
-                unique_vals = self.df[col].dropna().unique()
-                if len(unique_vals) <= 2 and set(unique_vals).issubset({0, 1, 0.0, 1.0}):
+                elif len(self.df[col].dropna().unique()) <= 2 and set(self.df[col].dropna().unique()).issubset({0, 1, 0.0, 1.0}):
                     self.column_types[col] = "categorical"
                 else:
                     self.column_types[col] = "numeric"
