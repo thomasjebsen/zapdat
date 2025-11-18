@@ -1236,34 +1236,65 @@
                 // Add chart-specific fields
                 switch (selectedChartType) {
                     case 'scatter':
-                        payload.x_column = document.getElementById('x_column').value;
-                        payload.y_column = document.getElementById('y_column').value;
-                        const colorCol = document.getElementById('color_column').value;
+                        payload.x_column = document.getElementById('x_column')?.value;
+                        payload.y_column = document.getElementById('y_column')?.value;
+                        if (!payload.x_column || !payload.y_column) {
+                            console.error('Scatter plot requires x and y columns');
+                            return;
+                        }
+                        const colorCol = document.getElementById('color_column')?.value;
                         if (colorCol !== 'None') payload.color_column = colorCol;
                         const sizeCol = document.getElementById('size_column')?.value;
                         if (sizeCol && sizeCol !== 'None') payload.size_column = sizeCol;
                         break;
 
                     case 'line':
-                        payload.x_column = document.getElementById('x_column').value;
-                        payload.y_column = document.getElementById('y_column').value;
+                        payload.x_column = document.getElementById('x_column')?.value;
+                        const yCol = document.getElementById('y_column')?.value;
+                        if (!payload.x_column || !yCol) {
+                            console.error('Line chart requires x and y columns');
+                            return;
+                        }
+                        // Backend expects y_columns as an array
+                        payload.y_columns = [yCol];
                         break;
 
                     case 'box':
                     case 'violin':
-                        payload.columns = Array.from(document.getElementById('columns').selectedOptions).map(opt => opt.value);
+                        const columnsEl = document.getElementById('columns');
+                        if (!columnsEl) {
+                            console.error('Box/Violin plot requires columns selection');
+                            return;
+                        }
+                        payload.columns = Array.from(columnsEl.selectedOptions).map(opt => opt.value);
+                        if (payload.columns.length === 0) {
+                            console.error('Please select at least one column for box/violin plot');
+                            return;
+                        }
                         const groupBy = document.getElementById('group_by')?.value;
                         if (groupBy && groupBy !== 'None') payload.group_by = groupBy;
                         break;
 
                     case 'pie':
-                        payload.x_column = document.getElementById('x_column').value;
+                        payload.x_column = document.getElementById('x_column')?.value;
+                        if (!payload.x_column) {
+                            console.error('Pie chart requires a column');
+                            return;
+                        }
                         payload.top_n = parseInt(document.getElementById('top_n')?.value || 10);
                         break;
 
                     case 'bar':
-                        payload.x_column = document.getElementById('x_column').value;
-                        payload.y_column = document.getElementById('y_column').value;
+                        payload.x_column = document.getElementById('x_column')?.value;
+                        payload.y_column = document.getElementById('y_column')?.value;
+                        if (!payload.x_column || !payload.y_column) {
+                            console.error('Bar chart requires x and y columns');
+                            return;
+                        }
+                        break;
+
+                    case 'correlation':
+                        // Correlation doesn't require specific columns
                         break;
                 }
 
@@ -1275,8 +1306,16 @@
                 });
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Chart generation failed');
+                    let errorMsg = 'Chart generation failed';
+                    try {
+                        const error = await response.json();
+                        errorMsg = error.detail || errorMsg;
+                    } catch (e) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    console.error('Chart generation error:', errorMsg);
+                    showError(errorMsg);
+                    return;
                 }
 
                 const data = await response.json();
@@ -1334,6 +1373,7 @@
 
             } catch (error) {
                 console.error('Chart generation error:', error);
+                showError(`Error: ${error.message || 'Unknown error occurred'}`);
             }
         }
 
