@@ -1,11 +1,15 @@
 """
 Enhanced test script for the analyzer with visualization output
 """
-import pandas as pd
-import sys
+
 import json
-sys.path.append('backend')
+import sys
+
+import pandas as pd
+
+sys.path.append("backend")
 from analyzer import TableAnalyzer
+
 
 def test_analyzer():
     """Test the analyzer with sample data and generate visualizations"""
@@ -15,7 +19,7 @@ def test_analyzer():
     print("TESTING TABLE EDA ANALYZER")
     print("=" * 60)
 
-    df = pd.read_csv('sample_data.csv')
+    df = pd.read_csv("sample_data.csv")
     print(f"\n✓ Loaded CSV with {len(df)} rows and {len(df.columns)} columns")
     print(f"✓ Columns: {', '.join(df.columns)}")
 
@@ -26,7 +30,7 @@ def test_analyzer():
     print(f"\n{'DETECTED COLUMN TYPES':^60}")
     print("-" * 60)
     for col, col_type in analyzer.column_types.items():
-        emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅'}
+        emoji = {"numeric": "🔢", "categorical": "🏷️", "text": "📝", "datetime": "📅"}
         print(f"{emoji.get(col_type, '📊')} {col:<20} → {col_type}")
 
     # Get overview
@@ -37,26 +41,28 @@ def test_analyzer():
     print(f"📊 Columns:    {overview['columns']:>10}")
     print(f"📊 Duplicates: {overview['duplicates']:>10}")
 
-    total_missing = sum(overview['missing_values'].values())
+    total_missing = sum(overview["missing_values"].values())
     print(f"📊 Missing:    {total_missing:>10}")
 
     # Test numeric analysis
     print(f"\n{'NUMERIC ANALYSIS: age':^60}")
     print("-" * 60)
-    age_analysis = analyzer.analyze_numeric('age')
-    for key, value in age_analysis['stats'].items():
+    age_analysis = analyzer.analyze_numeric("age")
+    for key, value in age_analysis["stats"].items():
         if value is None:
             print(f"{key:<15} → N/A")
         elif isinstance(value, int):
             print(f"{key:<15} → {value:>10,}")
-        else:
+        elif isinstance(value, float):
             print(f"{key:<15} → {value:>10.2f}")
+        else:
+            print(f"{key:<15} → {str(value):>10}")
 
     # Test categorical analysis
     print(f"\n{'CATEGORICAL ANALYSIS: department':^60}")
     print("-" * 60)
-    dept_analysis = analyzer.analyze_categorical('department')
-    for key, value in dept_analysis['stats'].items():
+    dept_analysis = analyzer.analyze_categorical("department")
+    for key, value in dept_analysis["stats"].items():
         if value is None:
             print(f"{key:<15} → N/A")
         elif isinstance(value, int):
@@ -70,8 +76,11 @@ def test_analyzer():
     full_analysis = analyzer.analyze_all()
 
     # Count visualizations
-    viz_count = sum(1 for col_data in full_analysis['columns'].values()
-                    if col_data.get('analysis', {}).get('plot'))
+    viz_count = sum(
+        1
+        for col_data in full_analysis["columns"].values()
+        if col_data.get("analysis", {}).get("plot")
+    )
 
     print(f"✓ Analyzed {len(full_analysis['columns'])} columns")
     print(f"✓ Generated {viz_count} visualizations")
@@ -82,10 +91,10 @@ def test_analyzer():
 
     html_content = generate_html_report(full_analysis)
 
-    with open('test_report.html', 'w') as f:
+    with open("test_report.html", "w") as f:
         f.write(html_content)
 
-    print(f"✓ Report saved to: test_report.html")
+    print("✓ Report saved to: test_report.html")
 
     # Verify JSON serialization
     print(f"\n{'TESTING JSON SERIALIZATION':^60}")
@@ -188,16 +197,16 @@ def generate_html_report(analysis):
     <div class="overview">
 """
 
-    overview = analysis['overview']
-    total_missing = sum(overview['missing_values'].values())
+    overview = analysis["overview"]
+    total_missing = sum(overview["missing_values"].values())
 
     html += f"""
         <div class="stat-box">
-            <div class="stat-value">{overview['rows']:,}</div>
+            <div class="stat-value">{overview["rows"]:,}</div>
             <div class="stat-label">Rows</div>
         </div>
         <div class="stat-box">
-            <div class="stat-value">{overview['columns']}</div>
+            <div class="stat-value">{overview["columns"]}</div>
             <div class="stat-label">Columns</div>
         </div>
         <div class="stat-box">
@@ -205,36 +214,33 @@ def generate_html_report(analysis):
             <div class="stat-label">Missing Values</div>
         </div>
         <div class="stat-box">
-            <div class="stat-value">{overview['duplicates']:,}</div>
+            <div class="stat-value">{overview["duplicates"]:,}</div>
             <div class="stat-label">Duplicates</div>
         </div>
     </div>
 """
 
     # Add column cards
-    for col_name, col_data in analysis['columns'].items():
-        type_emoji = {'numeric': '🔢', 'categorical': '🏷️', 'text': '📝', 'datetime': '📅'}
-        emoji = type_emoji.get(col_data['type'], '📊')
+    for col_name, col_data in analysis["columns"].items():
+        type_emoji = {"numeric": "🔢", "categorical": "🏷️", "text": "📝", "datetime": "📅"}
+        emoji = type_emoji.get(col_data["type"], "📊")
 
         html += f"""
     <div class="column-card">
         <div class="column-header">
             <h2>{emoji} {col_name}</h2>
-            <span class="column-type">{col_data['type']}</span>
+            <span class="column-type">{col_data["type"]}</span>
         </div>
 """
 
         # Add stats
-        if 'stats' in col_data.get('analysis', {}):
+        if "stats" in col_data.get("analysis", {}):
             html += '<div class="stats-grid">'
-            for key, value in col_data['analysis']['stats'].items():
+            for key, value in col_data["analysis"]["stats"].items():
                 if value is None:
-                    display_value = 'N/A'
+                    display_value = "N/A"
                 elif isinstance(value, (int, float)):
-                    if isinstance(value, int):
-                        display_value = f"{value:,}"
-                    else:
-                        display_value = f"{value:.2f}"
+                    display_value = f"{value:,}" if isinstance(value, int) else f"{value:.2f}"
                 else:
                     display_value = str(value)
 
@@ -244,20 +250,20 @@ def generate_html_report(analysis):
                     <div class="stat-item-value">{display_value}</div>
                 </div>
 """
-            html += '</div>'
+            html += "</div>"
 
         # Add plot
-        if 'plot' in col_data.get('analysis', {}):
+        if "plot" in col_data.get("analysis", {}):
             plot_id = f"plot-{col_name.replace(' ', '-')}"
             html += f'<div id="{plot_id}"></div>'
             html += f"""
     <script>
-        var plotData = {col_data['analysis']['plot']};
+        var plotData = {col_data["analysis"]["plot"]};
         Plotly.newPlot('{plot_id}', plotData.data, plotData.layout, {{responsive: true}});
     </script>
 """
 
-        html += '</div>'
+        html += "</div>"
 
     html += """
 </body>
@@ -267,6 +273,6 @@ def generate_html_report(analysis):
     return html
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = test_analyzer()
     sys.exit(0 if success else 1)

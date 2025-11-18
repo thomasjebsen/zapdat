@@ -1,7 +1,6 @@
 """
 Custom visualization generators for sexy charts
 """
-from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -15,19 +14,19 @@ class ChartGenerator:
     def __init__(self, df: pd.DataFrame):
         self.df = df
 
-    def _get_color_scheme(self, scheme: str) -> List[str]:
+    def _get_color_scheme(self, scheme: str) -> list[str]:
         """Get color palette based on scheme name"""
         schemes = {
-            'viridis': px.colors.sequential.Viridis,
-            'plasma': px.colors.sequential.Plasma,
-            'inferno': px.colors.sequential.Inferno,
-            'blues': px.colors.sequential.Blues,
-            'purples': px.colors.sequential.Purples,
-            'ocean': px.colors.sequential.Teal,
-            'sunset': px.colors.sequential.Sunset,
-            'rainbow': px.colors.qualitative.Vivid,
-            'pastel': px.colors.qualitative.Pastel,
-            'bold': px.colors.qualitative.Bold,
+            "viridis": px.colors.sequential.Viridis,
+            "plasma": px.colors.sequential.Plasma,
+            "inferno": px.colors.sequential.Inferno,
+            "blues": px.colors.sequential.Blues,
+            "purples": px.colors.sequential.Purples,
+            "ocean": px.colors.sequential.Teal,
+            "sunset": px.colors.sequential.Sunset,
+            "rainbow": px.colors.qualitative.Vivid,
+            "pastel": px.colors.qualitative.Pastel,
+            "bold": px.colors.qualitative.Bold,
         }
         return schemes.get(scheme, px.colors.qualitative.Plotly)
 
@@ -35,10 +34,10 @@ class ChartGenerator:
         self,
         x_column: str,
         y_column: str,
-        color_column: Optional[str] = None,
-        size_column: Optional[str] = None,
-        title: Optional[str] = None,
-        color_scheme: str = 'viridis'
+        color_column: str | None = None,
+        size_column: str | None = None,
+        title: str | None = None,
+        color_scheme: str = "viridis",
     ) -> str:
         """Create an interactive scatter plot"""
         if x_column not in self.df.columns or y_column not in self.df.columns:
@@ -79,23 +78,20 @@ class ChartGenerator:
             size=size_column,
             title=title or f"{y_column} vs {x_column}",
             color_continuous_scale=self._get_color_scheme(color_scheme),
-            trendline=trendline
+            trendline=trendline,
         )
 
-        fig.update_traces(marker=dict(line=dict(width=0.5, color='rgba(255,255,255,0.3)')))
-        fig.update_layout(
-            hovermode='closest',
-            height=600
-        )
+        fig.update_traces(marker={"line": {"width": 0.5, "color": "rgba(255,255,255,0.3)"}})
+        fig.update_layout(hovermode="closest", height=600)
 
         return fig.to_json()
 
     def box_plot(
         self,
-        columns: List[str],
-        group_by: Optional[str] = None,
-        title: Optional[str] = None,
-        color_scheme: str = 'viridis'
+        columns: list[str],
+        group_by: str | None = None,
+        title: str | None = None,
+        color_scheme: str = "viridis",
     ) -> str:
         """Create box plots to compare distributions"""
         if not columns:
@@ -113,7 +109,7 @@ class ChartGenerator:
                 y=valid_columns[0],
                 title=title or f"Distribution of {valid_columns[0]} by {group_by}",
                 color=group_by,
-                color_discrete_sequence=self._get_color_scheme(color_scheme)
+                color_discrete_sequence=self._get_color_scheme(color_scheme),
             )
         else:
             # Multiple box plots
@@ -123,28 +119,30 @@ class ChartGenerator:
             for i, col in enumerate(valid_columns):
                 data = self.df[col].dropna()
                 if len(data) > 0:
-                    fig.add_trace(go.Box(
-                        y=data,
-                        name=col,
-                        marker_color=colors[i % len(colors)],
-                        boxmean='sd'  # Show mean and standard deviation
-                    ))
+                    fig.add_trace(
+                        go.Box(
+                            y=data,
+                            name=col,
+                            marker_color=colors[i % len(colors)],
+                            boxmean="sd",  # Show mean and standard deviation
+                        )
+                    )
 
             fig.update_layout(
                 title=title or "Distribution Comparison",
                 yaxis_title="Value",
                 showlegend=True,
-                height=600
+                height=600,
             )
 
         return fig.to_json()
 
     def violin_plot(
         self,
-        columns: List[str],
-        group_by: Optional[str] = None,
-        title: Optional[str] = None,
-        color_scheme: str = 'viridis'
+        columns: list[str],
+        group_by: str | None = None,
+        title: str | None = None,
+        color_scheme: str = "viridis",
     ) -> str:
         """Create violin plots for distribution visualization"""
         if not columns:
@@ -162,8 +160,8 @@ class ChartGenerator:
                 title=title or f"Distribution of {valid_columns[0]} by {group_by}",
                 color=group_by,
                 box=True,
-                points='outliers',
-                color_discrete_sequence=self._get_color_scheme(color_scheme)
+                points="outliers",
+                color_discrete_sequence=self._get_color_scheme(color_scheme),
             )
         else:
             fig = go.Figure()
@@ -172,28 +170,30 @@ class ChartGenerator:
             for i, col in enumerate(valid_columns):
                 data = self.df[col].dropna()
                 if len(data) > 0:
-                    fig.add_trace(go.Violin(
-                        y=data,
-                        name=col,
-                        marker_color=colors[i % len(colors)],
-                        box_visible=True,
-                        meanline_visible=True
-                    ))
+                    fig.add_trace(
+                        go.Violin(
+                            y=data,
+                            name=col,
+                            marker_color=colors[i % len(colors)],
+                            box_visible=True,
+                            meanline_visible=True,
+                        )
+                    )
 
             fig.update_layout(
                 title=title or "Distribution Comparison",
                 yaxis_title="Value",
                 showlegend=True,
-                height=600
+                height=600,
             )
 
         return fig.to_json()
 
     def correlation_heatmap(
         self,
-        columns: Optional[List[str]] = None,
-        title: Optional[str] = None,
-        color_scheme: str = 'viridis'
+        columns: list[str] | None = None,
+        title: str | None = None,
+        color_scheme: str = "viridis",
     ) -> str:
         """Create a correlation heatmap for numeric columns"""
         # Get numeric columns
@@ -214,22 +214,19 @@ class ChartGenerator:
             corr_matrix,
             title=title or "Correlation Heatmap",
             color_continuous_scale=self._get_color_scheme(color_scheme),
-            aspect='auto',
-            labels=dict(color="Correlation"),
+            aspect="auto",
+            labels={"color": "Correlation"},
             zmin=-1,
-            zmax=1
+            zmax=1,
         )
 
         fig.update_layout(
-            height=max(400, len(corr_matrix) * 30),
-            width=max(400, len(corr_matrix) * 30)
+            height=max(400, len(corr_matrix) * 30), width=max(400, len(corr_matrix) * 30)
         )
 
         # Add correlation values as text
         fig.update_traces(
-            text=corr_matrix.round(2).values,
-            texttemplate='%{text}',
-            textfont={"size": 10}
+            text=corr_matrix.round(2).values, texttemplate="%{text}", textfont={"size": 10}
         )
 
         return fig.to_json()
@@ -237,9 +234,9 @@ class ChartGenerator:
     def line_chart(
         self,
         x_column: str,
-        y_columns: List[str],
-        title: Optional[str] = None,
-        color_scheme: str = 'viridis'
+        y_columns: list[str],
+        title: str | None = None,
+        color_scheme: str = "viridis",
     ) -> str:
         """Create a line chart for trends"""
         if x_column not in self.df.columns:
@@ -262,32 +259,30 @@ class ChartGenerator:
             y_data = df_sorted[y_col][mask]
 
             if len(x_data) > 0:
-                fig.add_trace(go.Scatter(
-                    x=x_data,
-                    y=y_data,
-                    mode='lines+markers',
-                    name=y_col,
-                    line=dict(color=colors[i % len(colors)], width=3),
-                    marker=dict(size=6)
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=x_data,
+                        y=y_data,
+                        mode="lines+markers",
+                        name=y_col,
+                        line={"color": colors[i % len(colors)], "width": 3},
+                        marker={"size": 6},
+                    )
+                )
 
         fig.update_layout(
-            title=title or f"Trend Analysis",
+            title=title or "Trend Analysis",
             xaxis_title=x_column,
             yaxis_title="Value",
-            hovermode='x unified',
+            hovermode="x unified",
             height=600,
-            showlegend=True
+            showlegend=True,
         )
 
         return fig.to_json()
 
     def pie_chart(
-        self,
-        column: str,
-        top_n: int = 10,
-        title: Optional[str] = None,
-        color_scheme: str = 'rainbow'
+        self, column: str, top_n: int = 10, title: str | None = None, color_scheme: str = "rainbow"
     ) -> str:
         """Create a pie chart for categorical data"""
         if column not in self.df.columns:
@@ -302,17 +297,15 @@ class ChartGenerator:
             values=value_counts.values,
             names=value_counts.index,
             title=title or f"Distribution of {column}",
-            color_discrete_sequence=self._get_color_scheme(color_scheme)
+            color_discrete_sequence=self._get_color_scheme(color_scheme),
         )
 
         hover_template = (
-            '<b>%{label}</b><br>'
-            'Count: %{value}<br>'
-            'Percentage: %{percent}<extra></extra>'
+            "<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>"
         )
         fig.update_traces(
-            textposition='inside',
-            textinfo='percent+label',
+            textposition="inside",
+            textinfo="percent+label",
             hovertemplate=hover_template,
         )
 
@@ -324,9 +317,9 @@ class ChartGenerator:
         self,
         x_column: str,
         y_column: str,
-        orientation: str = 'v',
-        title: Optional[str] = None,
-        color_scheme: str = 'viridis'
+        orientation: str = "v",
+        title: str | None = None,
+        color_scheme: str = "viridis",
     ) -> str:
         """Create a bar chart"""
         if x_column not in self.df.columns or y_column not in self.df.columns:
@@ -340,18 +333,14 @@ class ChartGenerator:
 
         fig = px.bar(
             df_clean,
-            x=x_column if orientation == 'v' else y_column,
-            y=y_column if orientation == 'v' else x_column,
+            x=x_column if orientation == "v" else y_column,
+            y=y_column if orientation == "v" else x_column,
             title=title or f"{y_column} by {x_column}",
-            color=y_column if orientation == 'v' else x_column,
+            color=y_column if orientation == "v" else x_column,
             color_continuous_scale=self._get_color_scheme(color_scheme),
-            orientation=orientation
+            orientation=orientation,
         )
 
-        fig.update_layout(
-            hovermode='closest',
-            height=600,
-            showlegend=False
-        )
+        fig.update_layout(hovermode="closest", height=600, showlegend=False)
 
         return fig.to_json()
