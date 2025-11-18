@@ -1,13 +1,12 @@
 """
 Data analysis module for automatic EDA
 """
-import math
-from typing import Any, Dict, List
 
-import numpy as np
+import math
+from typing import Any
+
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
 
 def safe_float(value):
@@ -45,7 +44,7 @@ class TableAnalyzer:
             elif pd.api.types.is_numeric_dtype(self.df[col]):
                 # Check if it's actually just 0/1 values (boolean-like)
                 unique_vals = self.df[col].dropna().unique()
-                if len(unique_vals) <= 2 and set(unique_vals).issubset({0, 1, 0.0, 1.0}):
+                if len(unique_vals) <= 2 and set(unique_vals).issubset({0, 1}):
                     self.column_types[col] = "categorical"
                 else:
                     self.column_types[col] = "numeric"
@@ -57,7 +56,7 @@ class TableAnalyzer:
                 else:
                     self.column_types[col] = "text"
 
-    def get_overview(self) -> Dict[str, Any]:
+    def get_overview(self) -> dict[str, Any]:
         """Get basic dataset overview"""
         return {
             "rows": len(self.df),
@@ -65,10 +64,10 @@ class TableAnalyzer:
             "column_names": list(self.df.columns),
             "column_types": self.column_types,
             "missing_values": self.df.isnull().sum().to_dict(),
-            "duplicates": int(self.df.duplicated().sum())
+            "duplicates": int(self.df.duplicated().sum()),
         }
 
-    def analyze_numeric(self, column: str) -> Dict[str, Any]:
+    def analyze_numeric(self, column: str) -> dict[str, Any]:
         """Analyze a numeric column with outlier detection and distribution analysis"""
         data = self.df[column].dropna()
 
@@ -89,7 +88,7 @@ class TableAnalyzer:
                 "zeros": 0,
                 "negatives": 0,
                 "skewness": None,
-                "distribution_shape": "N/A"
+                "distribution_shape": "N/A",
             }
             # No plot for empty data
             return {"stats": stats}
@@ -149,7 +148,7 @@ class TableAnalyzer:
             "skewness": safe_float(skew),
             "distribution_shape": dist_shape,
             "typical_min": non_outlier_min,
-            "typical_max": non_outlier_max
+            "typical_max": non_outlier_max,
         }
 
         # Create histogram only if we have data
@@ -158,24 +157,18 @@ class TableAnalyzer:
                 data,
                 x=data.values,
                 title=f"Distribution of {column}",
-                nbins=min(30, len(data.unique()))
+                nbins=min(30, len(data.unique())),
             )
             fig.update_layout(
-                showlegend=False,
-                hovermode='x unified',
-                xaxis_title=column,
-                yaxis_title="Count"
+                showlegend=False, hovermode="x unified", xaxis_title=column, yaxis_title="Count"
             )
 
-            return {
-                "stats": stats,
-                "plot": fig.to_json()
-            }
-        except Exception as e:
+            return {"stats": stats, "plot": fig.to_json()}
+        except Exception:
             # If plot creation fails, return stats only
             return {"stats": stats}
 
-    def analyze_categorical(self, column: str) -> Dict[str, Any]:
+    def analyze_categorical(self, column: str) -> dict[str, Any]:
         """Analyze a categorical column with smart cutoffs based on cardinality"""
         data = self.df[column].dropna()
 
@@ -188,7 +181,7 @@ class TableAnalyzer:
                 "mode_freq": 0,
                 "mode_pct": 0,
                 "missing": safe_int(self.df[column].isnull().sum()),
-                "diversity": "N/A"
+                "diversity": "N/A",
             }
             return {"stats": stats, "value_counts": {}}
 
@@ -197,7 +190,7 @@ class TableAnalyzer:
 
         # Calculate mode (most common) percentage
         mode_freq = safe_int(value_counts.iloc[0]) if len(value_counts) > 0 else 0
-        mode_pct = safe_float((mode_freq / len(data) * 100)) if len(data) > 0 else 0
+        mode_pct = safe_float(mode_freq / len(data) * 100) if len(data) > 0 else 0
 
         # Determine diversity level
         unique_ratio = unique_count / len(data) if len(data) > 0 else 0
@@ -240,7 +233,7 @@ class TableAnalyzer:
             "mode_pct": mode_pct,
             "missing": safe_int(self.df[column].isnull().sum()),
             "diversity": diversity,
-            "cardinality_level": cardinality_level
+            "cardinality_level": cardinality_level,
         }
 
         # Prepare value counts for display
@@ -257,30 +250,27 @@ class TableAnalyzer:
                 x=top_values.index.astype(str),
                 y=top_values.values,
                 title=chart_title,
-                labels={'x': column, 'y': 'Count'},
+                labels={"x": column, "y": "Count"},
             )
             fig.update_layout(
-                showlegend=False,
-                hovermode='x unified',
-                xaxis_title=column,
-                yaxis_title="Count"
+                showlegend=False, hovermode="x unified", xaxis_title=column, yaxis_title="Count"
             )
 
             return {
                 "stats": stats,
                 "value_counts": display_value_counts,
                 "remaining_categories": remaining_count if remaining_count > 0 else 0,
-                "plot": fig.to_json()
+                "plot": fig.to_json(),
             }
-        except Exception as e:
+        except Exception:
             # If plot creation fails, return stats only
             return {
                 "stats": stats,
                 "value_counts": display_value_counts,
-                "remaining_categories": remaining_count if remaining_count > 0 else 0
+                "remaining_categories": remaining_count if remaining_count > 0 else 0,
             }
 
-    def analyze_text(self, column: str) -> Dict[str, Any]:
+    def analyze_text(self, column: str) -> dict[str, Any]:
         """Analyze a text column with pattern detection"""
         data = self.df[column].dropna()
 
@@ -293,7 +283,7 @@ class TableAnalyzer:
                 "avg_length": 0,
                 "min_length": 0,
                 "max_length": 0,
-                "pattern_hint": "N/A"
+                "pattern_hint": "N/A",
             }
             return {"stats": stats, "samples": []}
 
@@ -306,14 +296,14 @@ class TableAnalyzer:
 
         # Pattern detection
         pattern_hint = "Free text"
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if data_str.str.match(email_pattern).sum() > len(data) * 0.5:
             pattern_hint = "Email addresses"
-        elif data_str.str.match(r'^https?://').sum() > len(data) * 0.5:
+        elif data_str.str.match(r"^https?://").sum() > len(data) * 0.5:
             pattern_hint = "URLs"
-        elif data_str.str.match(r'^\d+$').sum() > len(data) * 0.5:
+        elif data_str.str.match(r"^\d+$").sum() > len(data) * 0.5:
             pattern_hint = "Numeric IDs (as text)"
-        elif data_str.str.match(r'^[A-Z0-9-_]+$').sum() > len(data) * 0.5:
+        elif data_str.str.match(r"^[A-Z0-9-_]+$").sum() > len(data) * 0.5:
             pattern_hint = "IDs/Codes"
 
         stats = {
@@ -323,15 +313,12 @@ class TableAnalyzer:
             "avg_length": safe_float(lengths.mean()),
             "min_length": safe_int(lengths.min()),
             "max_length": safe_int(lengths.max()),
-            "pattern_hint": pattern_hint
+            "pattern_hint": pattern_hint,
         }
 
-        return {
-            "stats": stats,
-            "samples": samples
-        }
+        return {"stats": stats, "samples": samples}
 
-    def analyze_datetime(self, column: str) -> Dict[str, Any]:
+    def analyze_datetime(self, column: str) -> dict[str, Any]:
         """Analyze a datetime column"""
         data = self.df[column].dropna()
 
@@ -344,7 +331,7 @@ class TableAnalyzer:
                 "min_date": None,
                 "max_date": None,
                 "range_days": 0,
-                "most_common": None
+                "most_common": None,
             }
             return {"stats": stats}
 
@@ -364,7 +351,7 @@ class TableAnalyzer:
             "min_date": str(min_date) if pd.notna(min_date) else None,
             "max_date": str(max_date) if pd.notna(max_date) else None,
             "range_days": safe_int(date_range),
-            "most_common": most_common
+            "most_common": most_common,
         }
 
         # Create timeline plot if we have data
@@ -374,23 +361,17 @@ class TableAnalyzer:
                 data,
                 x=data.values,
                 title=f"Distribution of {column}",
-                nbins=min(30, len(data.unique()))
+                nbins=min(30, len(data.unique())),
             )
             fig.update_layout(
-                showlegend=False,
-                hovermode='x unified',
-                xaxis_title=column,
-                yaxis_title="Count"
+                showlegend=False, hovermode="x unified", xaxis_title=column, yaxis_title="Count"
             )
 
-            return {
-                "stats": stats,
-                "plot": fig.to_json()
-            }
-        except Exception as e:
+            return {"stats": stats, "plot": fig.to_json()}
+        except Exception:
             return {"stats": stats}
 
-    def analyze_all(self) -> Dict[str, Any]:
+    def analyze_all(self) -> dict[str, Any]:
         """Perform complete analysis on all columns"""
         overview = self.get_overview()
         column_analysis = {}
@@ -399,27 +380,12 @@ class TableAnalyzer:
             col_type = self.column_types[col]
 
             if col_type == "numeric":
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_numeric(col)
-                }
+                column_analysis[col] = {"type": col_type, "analysis": self.analyze_numeric(col)}
             elif col_type == "categorical":
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_categorical(col)
-                }
+                column_analysis[col] = {"type": col_type, "analysis": self.analyze_categorical(col)}
             elif col_type == "datetime":
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_datetime(col)
-                }
+                column_analysis[col] = {"type": col_type, "analysis": self.analyze_datetime(col)}
             else:  # text
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_text(col)
-                }
+                column_analysis[col] = {"type": col_type, "analysis": self.analyze_text(col)}
 
-        return {
-            "overview": overview,
-            "columns": column_analysis
-        }
+        return {"overview": overview, "columns": column_analysis}

@@ -1,19 +1,17 @@
 """
 FastAPI backend for Table EDA Analyzer
 """
+
 import logging
-from io import StringIO
-from typing import List, Optional
 
 import pandas as pd
+from analyzer import TableAnalyzer
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from file_reader import FileFormatError, MultiFormatReader
 from pydantic import BaseModel
-
-from analyzer import TableAnalyzer
 from visualizations import ChartGenerator
-from file_reader import MultiFormatReader, FileFormatError
 
 app = FastAPI(title="Table EDA Analyzer")
 
@@ -89,40 +87,40 @@ async def analyze_file(file: UploadFile = File(...)):
             "filename": file.filename,
             "cache_key": cache_key,
             "file_format": MultiFormatReader.detect_format(file.filename),
-            "analysis": analysis
+            "analysis": analysis,
         }
 
     except FileFormatError as e:
         logger.error(f"FileFormatError for {file.filename}: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except pd.errors.EmptyDataError:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except pd.errors.EmptyDataError as e:
         logger.error(f"EmptyDataError for {file.filename}")
-        raise HTTPException(status_code=400, detail="File is empty or invalid")
+        raise HTTPException(status_code=400, detail="File is empty or invalid") from e
     except pd.errors.ParserError as e:
         logger.error(f"ParserError for {file.filename}: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error parsing file: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error parsing file: {str(e)}") from e
     except UnicodeDecodeError as e:
         logger.error(f"UnicodeDecodeError for {file.filename}: {str(e)}")
         raise HTTPException(
             status_code=400,
             detail="File encoding error. Please ensure the file is UTF-8 encoded.",
-        )
+        ) from e
     except Exception as e:
         logger.error(f"Unexpected error analyzing {file.filename}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error analyzing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error analyzing file: {str(e)}") from e
 
 
 class CustomChartRequest(BaseModel):
     cache_key: str
     chart_type: str
-    x_column: Optional[str] = None
-    y_column: Optional[str] = None
-    y_columns: Optional[List[str]] = None
-    columns: Optional[List[str]] = None
-    color_column: Optional[str] = None
-    size_column: Optional[str] = None
-    group_by: Optional[str] = None
-    title: Optional[str] = None
+    x_column: str | None = None
+    y_column: str | None = None
+    y_columns: list[str] | None = None
+    columns: list[str] | None = None
+    color_column: str | None = None
+    size_column: str | None = None
+    group_by: str | None = None
+    title: str | None = None
     color_scheme: str = "viridis"
     top_n: int = 10
     orientation: str = "v"
@@ -136,8 +134,7 @@ async def create_custom_chart(request: CustomChartRequest):
     # Get dataframe from cache
     if request.cache_key not in dataframe_cache:
         raise HTTPException(
-            status_code=404,
-            detail="Dataset not found. Please upload a file first."
+            status_code=404, detail="Dataset not found. Please upload a file first."
         )
 
     df = dataframe_cache[request.cache_key]
@@ -147,8 +144,7 @@ async def create_custom_chart(request: CustomChartRequest):
         if request.chart_type == "scatter":
             if not request.x_column or not request.y_column:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Scatter plot requires x_column and y_column"
+                    status_code=400, detail="Scatter plot requires x_column and y_column"
                 )
             chart_json = generator.scatter_plot(
                 x_column=request.x_column,
@@ -156,100 +152,82 @@ async def create_custom_chart(request: CustomChartRequest):
                 color_column=request.color_column,
                 size_column=request.size_column,
                 title=request.title,
-                color_scheme=request.color_scheme
+                color_scheme=request.color_scheme,
             )
 
         elif request.chart_type == "box":
             if not request.columns:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Box plot requires at least one column"
-                )
+                raise HTTPException(status_code=400, detail="Box plot requires at least one column")
             chart_json = generator.box_plot(
                 columns=request.columns,
                 group_by=request.group_by,
                 title=request.title,
-                color_scheme=request.color_scheme
+                color_scheme=request.color_scheme,
             )
 
         elif request.chart_type == "violin":
             if not request.columns:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Violin plot requires at least one column"
+                    status_code=400, detail="Violin plot requires at least one column"
                 )
             chart_json = generator.violin_plot(
                 columns=request.columns,
                 group_by=request.group_by,
                 title=request.title,
-                color_scheme=request.color_scheme
+                color_scheme=request.color_scheme,
             )
 
         elif request.chart_type == "correlation":
             chart_json = generator.correlation_heatmap(
-                columns=request.columns,
-                title=request.title,
-                color_scheme=request.color_scheme
+                columns=request.columns, title=request.title, color_scheme=request.color_scheme
             )
 
         elif request.chart_type == "line":
             if not request.x_column or not request.y_columns:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Line chart requires x_column and y_columns"
+                    status_code=400, detail="Line chart requires x_column and y_columns"
                 )
             chart_json = generator.line_chart(
                 x_column=request.x_column,
                 y_columns=request.y_columns,
                 title=request.title,
-                color_scheme=request.color_scheme
+                color_scheme=request.color_scheme,
             )
 
         elif request.chart_type == "pie":
             if not request.x_column:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Pie chart requires a column (x_column)"
+                    status_code=400, detail="Pie chart requires a column (x_column)"
                 )
             chart_json = generator.pie_chart(
                 column=request.x_column,
                 top_n=request.top_n,
                 title=request.title,
-                color_scheme=request.color_scheme
+                color_scheme=request.color_scheme,
             )
 
         elif request.chart_type == "bar":
             if not request.x_column or not request.y_column:
                 raise HTTPException(
-                    status_code=400,
-                    detail="Bar chart requires x_column and y_column"
+                    status_code=400, detail="Bar chart requires x_column and y_column"
                 )
             chart_json = generator.bar_chart(
                 x_column=request.x_column,
                 y_column=request.y_column,
                 orientation=request.orientation,
                 title=request.title,
-                color_scheme=request.color_scheme
+                color_scheme=request.color_scheme,
             )
 
         else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unknown chart type: {request.chart_type}"
-            )
+            raise HTTPException(status_code=400, detail=f"Unknown chart type: {request.chart_type}")
 
-        return {
-            "status": "success",
-            "chart": chart_json
-        }
+        return {"status": "success", "chart": chart_json}
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating chart: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error generating chart: {str(e)}") from e
 
 
 @app.get("/column_info/{cache_key}")
@@ -259,21 +237,16 @@ async def get_column_info(cache_key: str):
     """
     if cache_key not in dataframe_cache:
         raise HTTPException(
-            status_code=404,
-            detail="Dataset not found. Please upload a file first."
+            status_code=404, detail="Dataset not found. Please upload a file first."
         )
 
     df = dataframe_cache[cache_key]
     analyzer = TableAnalyzer(df)
 
     # Categorize columns by type
-    numeric_columns = [
-        col for col, dtype in analyzer.column_types.items()
-        if dtype == "numeric"
-    ]
+    numeric_columns = [col for col, dtype in analyzer.column_types.items() if dtype == "numeric"]
     categorical_columns = [
-        col for col, dtype in analyzer.column_types.items()
-        if dtype == "categorical"
+        col for col, dtype in analyzer.column_types.items() if dtype == "categorical"
     ]
     all_columns = list(df.columns)
 
@@ -281,7 +254,7 @@ async def get_column_info(cache_key: str):
         "all_columns": all_columns,
         "numeric_columns": numeric_columns,
         "categorical_columns": categorical_columns,
-        "column_types": analyzer.column_types
+        "column_types": analyzer.column_types,
     }
 
 
@@ -306,8 +279,8 @@ async def get_supported_formats():
             ".sqlite3": "SQLite Database",
             ".h5": "HDF5 (Hierarchical Data Format)",
             ".hdf5": "HDF5 (Hierarchical Data Format)",
-            ".orc": "Apache ORC (Optimized Row Columnar)"
-        }
+            ".orc": "Apache ORC (Optimized Row Columnar)",
+        },
     }
 
 

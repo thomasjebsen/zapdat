@@ -2,16 +2,18 @@
 Multi-format file reader for data analysis
 Supports CSV, Excel, JSON, TSV, Parquet, Feather, Pickle, SQLite, HDF5, and ORC
 """
-import pandas as pd
-from io import BytesIO, StringIO
-from typing import Tuple, Optional
+
+import os
 import sqlite3
 import tempfile
-import os
+from io import BytesIO, StringIO
+
+import pandas as pd
 
 
 class FileFormatError(Exception):
     """Raised when file format is not supported or cannot be read"""
+
     pass
 
 
@@ -20,22 +22,22 @@ class MultiFormatReader:
 
     # Supported file extensions mapped to their readers
     SUPPORTED_FORMATS = {
-        '.csv': 'read_csv',
-        '.tsv': 'read_tsv',
-        '.txt': 'read_txt',
-        '.xlsx': 'read_excel',
-        '.xls': 'read_excel',
-        '.json': 'read_json',
-        '.parquet': 'read_parquet',
-        '.feather': 'read_feather',
-        '.pkl': 'read_pickle',
-        '.pickle': 'read_pickle',
-        '.db': 'read_sqlite',
-        '.sqlite': 'read_sqlite',
-        '.sqlite3': 'read_sqlite',
-        '.h5': 'read_hdf5',
-        '.hdf5': 'read_hdf5',
-        '.orc': 'read_orc',
+        ".csv": "read_csv",
+        ".tsv": "read_tsv",
+        ".txt": "read_txt",
+        ".xlsx": "read_excel",
+        ".xls": "read_excel",
+        ".json": "read_json",
+        ".parquet": "read_parquet",
+        ".feather": "read_feather",
+        ".pkl": "read_pickle",
+        ".pickle": "read_pickle",
+        ".db": "read_sqlite",
+        ".sqlite": "read_sqlite",
+        ".sqlite3": "read_sqlite",
+        ".h5": "read_hdf5",
+        ".hdf5": "read_hdf5",
+        ".orc": "read_orc",
     }
 
     @classmethod
@@ -88,26 +90,26 @@ class MultiFormatReader:
             reader = getattr(cls, reader_method)
             return reader(file_content, **kwargs)
         except Exception as e:
-            raise FileFormatError(f"Error reading {ext} file: {str(e)}")
+            raise FileFormatError(f"Error reading {ext} file: {str(e)}") from e
 
     @staticmethod
     def read_csv(file_content: bytes, **kwargs) -> pd.DataFrame:
         """Read CSV file"""
-        text_content = file_content.decode('utf-8')
+        text_content = file_content.decode("utf-8")
         return pd.read_csv(StringIO(text_content), **kwargs)
 
     @staticmethod
     def read_tsv(file_content: bytes, **kwargs) -> pd.DataFrame:
         """Read TSV (Tab-Separated Values) file"""
-        text_content = file_content.decode('utf-8')
-        return pd.read_csv(StringIO(text_content), sep='\t', **kwargs)
+        text_content = file_content.decode("utf-8")
+        return pd.read_csv(StringIO(text_content), sep="\t", **kwargs)
 
     @staticmethod
     def read_txt(file_content: bytes, **kwargs) -> pd.DataFrame:
         """Read TXT file (assumes tab-delimited by default)"""
-        text_content = file_content.decode('utf-8')
+        text_content = file_content.decode("utf-8")
         # Try to auto-detect delimiter
-        return pd.read_csv(StringIO(text_content), sep=None, engine='python', **kwargs)
+        return pd.read_csv(StringIO(text_content), sep=None, engine="python", **kwargs)
 
     @staticmethod
     def read_excel(file_content: bytes, **kwargs) -> pd.DataFrame:
@@ -117,16 +119,16 @@ class MultiFormatReader:
     @staticmethod
     def read_json(file_content: bytes, **kwargs) -> pd.DataFrame:
         """Read JSON file"""
-        text_content = file_content.decode('utf-8')
+        text_content = file_content.decode("utf-8")
         # Try different JSON orientations
         try:
             return pd.read_json(StringIO(text_content), **kwargs)
         except ValueError as e:
             # Try with orient='records' for array of objects
             try:
-                return pd.read_json(StringIO(text_content), orient='records', **kwargs)
+                return pd.read_json(StringIO(text_content), orient="records", **kwargs)
             except ValueError:
-                raise FileFormatError(f"Invalid JSON format: {str(e)}")
+                raise FileFormatError(f"Invalid JSON format: {str(e)}") from e
 
     @staticmethod
     def read_parquet(file_content: bytes, **kwargs) -> pd.DataFrame:
@@ -137,7 +139,7 @@ class MultiFormatReader:
     def read_feather(file_content: bytes, **kwargs) -> pd.DataFrame:
         """Read Feather file"""
         # Feather requires a file path, so we write to temp file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.feather') as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".feather") as tmp:
             tmp.write(file_content)
             tmp_path = tmp.name
 
@@ -153,7 +155,7 @@ class MultiFormatReader:
         return pd.read_pickle(BytesIO(file_content), **kwargs)
 
     @staticmethod
-    def read_sqlite(file_content: bytes, table_name: Optional[str] = None, **kwargs) -> pd.DataFrame:
+    def read_sqlite(file_content: bytes, table_name: str | None = None, **kwargs) -> pd.DataFrame:
         """
         Read SQLite database file
 
@@ -163,7 +165,7 @@ class MultiFormatReader:
             **kwargs: Additional arguments for read_sql
         """
         # SQLite requires a file path
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.db') as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".db") as tmp:
             tmp.write(file_content)
             tmp_path = tmp.name
 
@@ -186,7 +188,7 @@ class MultiFormatReader:
             os.unlink(tmp_path)
 
     @staticmethod
-    def read_hdf5(file_content: bytes, key: Optional[str] = None, **kwargs) -> pd.DataFrame:
+    def read_hdf5(file_content: bytes, key: str | None = None, **kwargs) -> pd.DataFrame:
         """
         Read HDF5 file
 
@@ -196,14 +198,14 @@ class MultiFormatReader:
             **kwargs: Additional arguments for read_hdf
         """
         # HDF5 requires a file path
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.h5') as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".h5") as tmp:
             tmp.write(file_content)
             tmp_path = tmp.name
 
         try:
             # If no key specified, try to get the first one
             if key is None:
-                with pd.HDFStore(tmp_path, 'r') as store:
+                with pd.HDFStore(tmp_path, "r") as store:
                     keys = store.keys()
                     if not keys:
                         raise FileFormatError("No datasets found in HDF5 file")
