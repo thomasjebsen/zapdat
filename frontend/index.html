@@ -304,10 +304,31 @@
             text-align: center;
             transition: all 0.2s ease;
             box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
+            position: relative;
+            cursor: pointer;
+            user-select: none;
         }
 
         .stat-box:hover {
             box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .stat-box:active {
+            transform: translateY(0);
+        }
+
+        .stat-copy-icon {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            font-size: 1rem;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .stat-box:hover .stat-copy-icon {
+            opacity: 1;
         }
 
         .stat-value {
@@ -323,6 +344,53 @@
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+        }
+
+        /* Copy toast notification */
+        .copy-toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+            font-size: 0.95rem;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease, slideOutRight 0.3s ease 2.7s;
+            pointer-events: none;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .copy-toast-value {
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
         }
 
         /* Column Cards */
@@ -381,11 +449,34 @@
             border-radius: 8px;
             border: 1px solid var(--border);
             transition: all 0.2s ease;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
         }
 
         .stat-item:hover {
             background: var(--bg-tertiary);
             border-color: var(--border-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .stat-item:active {
+            transform: translateY(0);
+        }
+
+        .stat-item-copy-icon {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .stat-item:hover .stat-item-copy-icon {
+            opacity: 1;
         }
 
         .stat-item-label {
@@ -942,10 +1033,37 @@
             return abbreviated;
         }
 
+        // Show copy toast notification
+        function showCopyToast(value) {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.copy-toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'copy-toast';
+
+            // Format the value for display
+            const displayValue = typeof value === 'number'
+                ? (Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+                : value;
+
+            toast.innerHTML = `✓ Copied <span class="copy-toast-value">${displayValue}</span> to clipboard`;
+
+            document.body.appendChild(toast);
+
+            // Remove after animation completes
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
         // Copy number to clipboard and show feedback
         function copyToClipboard(value, element) {
             navigator.clipboard.writeText(value).then(() => {
-                // Show visual feedback
+                // Show visual feedback on the element
                 const originalText = element.textContent;
                 const originalTitle = element.title;
                 element.textContent = '✓';
@@ -958,6 +1076,17 @@
                     element.title = originalTitle;
                     element.style.color = '';
                 }, 1000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        // Copy stat value from card
+        function copyStatValue(value, event) {
+            event.stopPropagation();
+            const rawValue = value.toString();
+            navigator.clipboard.writeText(rawValue).then(() => {
+                showCopyToast(value);
             }).catch(err => {
                 console.error('Failed to copy:', err);
             });
@@ -1062,20 +1191,24 @@
             const totalMissing = Object.values(overview.missing_values).reduce((a, b) => a + b, 0);
 
             overviewStats.innerHTML = `
-                <div class="stat-box" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-                    <div class="stat-value">${formatNumberWithTooltip(overview.rows)}</div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);" onclick="copyStatValue(${overview.rows}, event)">
+                    <div class="stat-copy-icon">📋</div>
+                    <div class="stat-value">${abbreviateNumber(overview.rows)}</div>
                     <div class="stat-label">Rows</div>
                 </div>
-                <div class="stat-box" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                    <div class="stat-value">${formatNumberWithTooltip(overview.columns)}</div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);" onclick="copyStatValue(${overview.columns}, event)">
+                    <div class="stat-copy-icon">📋</div>
+                    <div class="stat-value">${abbreviateNumber(overview.columns)}</div>
                     <div class="stat-label">Columns</div>
                 </div>
-                <div class="stat-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                    <div class="stat-value">${formatNumberWithTooltip(totalMissing)}</div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);" onclick="copyStatValue(${totalMissing}, event)">
+                    <div class="stat-copy-icon">📋</div>
+                    <div class="stat-value">${abbreviateNumber(totalMissing)}</div>
                     <div class="stat-label">Missing Values</div>
                 </div>
-                <div class="stat-box" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                    <div class="stat-value">${formatNumberWithTooltip(overview.duplicates)}</div>
+                <div class="stat-box" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" onclick="copyStatValue(${overview.duplicates}, event)">
+                    <div class="stat-copy-icon">📋</div>
+                    <div class="stat-value">${abbreviateNumber(overview.duplicates)}</div>
                     <div class="stat-label">Duplicates</div>
                 </div>
             `;
@@ -1177,10 +1310,16 @@
                 // Display main stats
                 statsHtml = '<div class="stats-grid">';
                 for (const [key, value] of Object.entries(mainStats)) {
+                    const isNumber = typeof value === 'number';
+                    const rawValue = isNumber ? value.toString().replace(/'/g, "\\'") : '';
+                    const clickHandler = isNumber ? `onclick="copyStatValue(${value}, event)"` : '';
+                    const copyIcon = isNumber ? '<div class="stat-item-copy-icon">📋</div>' : '';
+
                     statsHtml += `
-                        <div class="stat-item">
+                        <div class="stat-item" ${clickHandler}>
+                            ${copyIcon}
                             <div class="stat-item-label">${formatLabel(key)}</div>
-                            <div class="stat-item-value">${formatValue(value)}</div>
+                            <div class="stat-item-value">${isNumber ? abbreviateNumber(value) : formatValue(value)}</div>
                         </div>
                     `;
                 }
@@ -1200,10 +1339,15 @@
                                     <div class="stats-grid">
                     `;
                     for (const [key, value] of Object.entries(advancedStats)) {
+                        const isNumber = typeof value === 'number';
+                        const clickHandler = isNumber ? `onclick="copyStatValue(${value}, event)"` : '';
+                        const copyIcon = isNumber ? '<div class="stat-item-copy-icon">📋</div>' : '';
+
                         statsHtml += `
-                            <div class="stat-item">
+                            <div class="stat-item" ${clickHandler}>
+                                ${copyIcon}
                                 <div class="stat-item-label">${formatLabel(key)}</div>
-                                <div class="stat-item-value">${formatValue(value)}</div>
+                                <div class="stat-item-value">${isNumber ? abbreviateNumber(value) : formatValue(value)}</div>
                             </div>
                         `;
                     }
