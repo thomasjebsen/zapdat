@@ -724,6 +724,66 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             border: 1px solid var(--border);
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .column-type:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .column-type::after {
+            content: '▼';
+            margin-left: 0.5rem;
+            font-size: 0.6rem;
+            opacity: 0.6;
+        }
+
+        .type-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-lg);
+            z-index: 1000;
+            min-width: 150px;
+            display: none;
+            animation: fadeInUp 0.2s ease;
+        }
+
+        .type-dropdown.active {
+            display: block;
+        }
+
+        .type-option {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .type-option:last-child {
+            border-bottom: none;
+        }
+
+        .type-option:hover {
+            background: var(--bg-tertiary);
+            color: var(--primary);
+        }
+
+        .type-option.current {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--primary);
         }
 
         .stats-grid {
@@ -1585,10 +1645,20 @@
                 'datetime': '📅'
             };
 
+            const sanitizedName = name.replace(/[^a-zA-Z0-9]/g, '-');
+            const typeId = `type-${sanitizedName}-${Date.now()}`;
             const header = `
                 <div class="column-header">
                     <div class="column-name">${typeEmoji[data.type] || '📊'} ${name}</div>
-                    <div class="column-type">${data.type}</div>
+                    <div class="column-type" id="${typeId}" data-column="${name}" data-current-type="${data.type}">
+                        ${data.type}
+                        <div class="type-dropdown">
+                            <div class="type-option ${data.type === 'numeric' ? 'current' : ''}" data-type="numeric">🔢 Numeric</div>
+                            <div class="type-option ${data.type === 'categorical' ? 'current' : ''}" data-type="categorical">🏷️ Categorical</div>
+                            <div class="type-option ${data.type === 'text' ? 'current' : ''}" data-type="text">📝 Text</div>
+                            <div class="type-option ${data.type === 'datetime' ? 'current' : ''}" data-type="datetime">📅 Datetime</div>
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -1829,7 +1899,119 @@
                 }
             }
 
+            // Add type dropdown event listeners after card is rendered
+            setTimeout(() => {
+                const typeElement = card.querySelector(`#${typeId}`);
+                const dropdown = typeElement?.querySelector('.type-dropdown');
+
+                if (typeElement && dropdown) {
+                    // Toggle dropdown on click
+                    typeElement.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Close other dropdowns
+                        document.querySelectorAll('.type-dropdown.active').forEach(d => {
+                            if (d !== dropdown) d.classList.remove('active');
+                        });
+                        dropdown.classList.toggle('active');
+                    });
+
+                    // Handle type option selection
+                    dropdown.querySelectorAll('.type-option').forEach(option => {
+                        option.addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            const newType = option.dataset.type;
+                            const currentType = typeElement.dataset.currentType;
+                            const columnName = typeElement.dataset.column;
+
+                            if (newType !== currentType) {
+                                dropdown.classList.remove('active');
+                                await handleTypeOverride(columnName, newType);
+                            }
+                        });
+                    });
+                }
+            }, 100);
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                const dropdown = card.querySelector('.type-dropdown');
+                if (dropdown) dropdown.classList.remove('active');
+            });
+
             return card;
+        }
+
+        // Handle type override
+        async function handleTypeOverride(columnName, newType) {
+            if (!currentCacheKey) {
+                showError('No dataset loaded. Please upload a file first.');
+                return;
+            }
+
+            try {
+                // Show loading indicator
+                const columnAnalysis = document.getElementById('columnAnalysis');
+                const columnCards = columnAnalysis.querySelectorAll('.column-card');
+                let targetCard = null;
+
+                // Find the card for this column
+                columnCards.forEach(card => {
+                    const cardName = card.querySelector('.column-name')?.textContent;
+                    if (cardName && cardName.includes(columnName)) {
+                        targetCard = card;
+                    }
+                });
+
+                if (targetCard) {
+                    targetCard.style.opacity = '0.5';
+                    targetCard.style.pointerEvents = 'none';
+                }
+
+                // Call the override API
+                const response = await fetch('http://localhost:8000/override_type', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cache_key: currentCacheKey,
+                        column: columnName,
+                        new_type: newType
+                    })
+                });
+
+                if (!response.ok) {
+                    let errorMsg = 'Failed to override type';
+                    try {
+                        const error = await response.json();
+                        errorMsg = error.detail || errorMsg;
+                    } catch (e) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    throw new Error(errorMsg);
+                }
+
+                const data = await response.json();
+
+                // Create new card with updated analysis
+                const newCard = createColumnCard(columnName, data.analysis);
+
+                // Replace the old card
+                if (targetCard) {
+                    targetCard.replaceWith(newCard);
+                    // Scroll to the updated card
+                    newCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+
+            } catch (error) {
+                console.error('Error overriding type:', error);
+                showError(`Error changing type: ${error.message}`);
+
+                // Restore card state
+                const columnCards = document.querySelectorAll('.column-card');
+                columnCards.forEach(card => {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                });
+            }
         }
 
         // Toggle collapsible sections

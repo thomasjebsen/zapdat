@@ -390,34 +390,90 @@ class TableAnalyzer:
         except Exception as e:
             return {"stats": stats}
 
+    def override_column_type(self, column: str, new_type: str) -> Dict[str, Any]:
+        """
+        Override the detected type for a column and re-analyze it
+
+        Args:
+            column: Column name to override
+            new_type: One of 'numeric', 'categorical', 'text', 'datetime'
+
+        Returns:
+            Dict with type and analysis results
+        """
+        if column not in self.df.columns:
+            raise ValueError(f"Column '{column}' not found in dataframe")
+
+        valid_types = ["numeric", "categorical", "text", "datetime"]
+        if new_type not in valid_types:
+            raise ValueError(f"Invalid type '{new_type}'. Must be one of: {valid_types}")
+
+        # Update the column type
+        old_type = self.column_types[column]
+        self.column_types[column] = new_type
+
+        # Convert data if necessary
+        if new_type == "numeric":
+            try:
+                # Try to convert to numeric
+                self.df[column] = pd.to_numeric(self.df[column], errors='coerce')
+            except Exception:
+                # If conversion fails, revert type
+                self.column_types[column] = old_type
+                raise ValueError(f"Cannot convert column '{column}' to numeric")
+        elif new_type == "datetime":
+            try:
+                # Try to convert to datetime
+                self.df[column] = pd.to_datetime(self.df[column], errors='coerce')
+            except Exception:
+                # If conversion fails, revert type
+                self.column_types[column] = old_type
+                raise ValueError(f"Cannot convert column '{column}' to datetime")
+        elif new_type == "categorical":
+            # Convert to string for categorical analysis
+            self.df[column] = self.df[column].astype(str)
+        elif new_type == "text":
+            # Convert to string for text analysis
+            self.df[column] = self.df[column].astype(str)
+
+        # Re-analyze with the new type
+        return self.analyze_column(column)
+
+    def analyze_column(self, column: str) -> Dict[str, Any]:
+        """Analyze a single column based on its detected type"""
+        if column not in self.df.columns:
+            raise ValueError(f"Column '{column}' not found in dataframe")
+
+        col_type = self.column_types[column]
+
+        if col_type == "numeric":
+            return {
+                "type": col_type,
+                "analysis": self.analyze_numeric(column)
+            }
+        elif col_type == "categorical":
+            return {
+                "type": col_type,
+                "analysis": self.analyze_categorical(column)
+            }
+        elif col_type == "datetime":
+            return {
+                "type": col_type,
+                "analysis": self.analyze_datetime(column)
+            }
+        else:  # text
+            return {
+                "type": col_type,
+                "analysis": self.analyze_text(column)
+            }
+
     def analyze_all(self) -> Dict[str, Any]:
         """Perform complete analysis on all columns"""
         overview = self.get_overview()
         column_analysis = {}
 
         for col in self.df.columns:
-            col_type = self.column_types[col]
-
-            if col_type == "numeric":
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_numeric(col)
-                }
-            elif col_type == "categorical":
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_categorical(col)
-                }
-            elif col_type == "datetime":
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_datetime(col)
-                }
-            else:  # text
-                column_analysis[col] = {
-                    "type": col_type,
-                    "analysis": self.analyze_text(col)
-                }
+            column_analysis[col] = self.analyze_column(col)
 
         return {
             "overview": overview,

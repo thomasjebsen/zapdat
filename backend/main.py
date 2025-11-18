@@ -17,9 +17,10 @@ from file_reader import MultiFormatReader, FileFormatError
 
 app = FastAPI(title="Table EDA Analyzer")
 
-# Simple in-memory cache for uploaded dataframes
+# Simple in-memory cache for uploaded dataframes and analyzers
 # In production, use Redis or similar
 dataframe_cache = {}
+analyzer_cache = {}
 
 # CORS middleware for local development
 app.add_middleware(
@@ -74,13 +75,14 @@ async def analyze_file(file: UploadFile = File(...)):
 
         logger.info(f"Successfully parsed {file.filename}, shape: {df.shape}")
 
-        # Store dataframe in cache with filename as key
-        cache_key = file.filename
-        dataframe_cache[cache_key] = df
-
         # Analyze the data
         analyzer = TableAnalyzer(df)
         analysis = analyzer.analyze_all()
+
+        # Store both dataframe and analyzer in cache with filename as key
+        cache_key = file.filename
+        dataframe_cache[cache_key] = df
+        analyzer_cache[cache_key] = analyzer
 
         logger.info(f"Analysis complete for {file.filename}")
 
@@ -309,6 +311,54 @@ async def get_supported_formats():
             ".orc": "Apache ORC (Optimized Row Columnar)"
         }
     }
+
+
+class TypeOverrideRequest(BaseModel):
+    cache_key: str
+    column: str
+    new_type: str
+
+
+@app.post("/override_type")
+async def override_column_type(request: TypeOverrideRequest):
+    """
+    Override the detected type for a column and re-analyze it
+    """
+    # Get analyzer from cache
+    if request.cache_key not in analyzer_cache:
+        raise HTTPException(
+            status_code=404,
+            detail="Dataset not found. Please upload a file first."
+        )
+
+    analyzer = analyzer_cache[request.cache_key]
+
+    try:
+        # Store old type for response
+        old_type = analyzer.column_types.get(request.column, "unknown")
+
+        # Override the column type and get new analysis
+        column_analysis = analyzer.override_column_type(request.column, request.new_type)
+
+        # Update the cache with the modified analyzer and dataframe
+        analyzer_cache[request.cache_key] = analyzer
+        dataframe_cache[request.cache_key] = analyzer.df
+
+        return {
+            "status": "success",
+            "column": request.column,
+            "old_type": old_type,
+            "new_type": request.new_type,
+            "analysis": column_analysis
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error overriding type: {str(e)}"
+        )
 
 
 @app.get("/health")
