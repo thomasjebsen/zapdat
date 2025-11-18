@@ -71,46 +71,104 @@
         /* Header */
         header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
             animation: fadeInDown 0.8s ease;
         }
 
         .logo {
-            font-size: 3.5rem;
+            font-size: 4rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
             letter-spacing: -0.02em;
         }
 
         .tagline {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .description {
+            font-size: 1.125rem;
             color: var(--text-secondary);
-            font-weight: 300;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            line-height: 1.7;
+        }
+
+        .hero-badges {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .badge-icon {
+            font-size: 1.125rem;
         }
 
         /* Upload Section */
         .upload-section {
             background: var(--bg-primary);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 3rem;
             margin-bottom: 3rem;
-            box-shadow: 0 1px 3px 0 var(--shadow), 0 1px 2px -1px var(--shadow);
+            box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
             animation: fadeInUp 0.8s ease 0.2s both;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section.compact {
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .upload-section.compact .upload-area {
+            padding: 2rem 1.5rem;
+        }
+
+        .upload-section.compact .upload-icon {
+            font-size: 3rem;
+        }
+
+        .upload-section.compact .upload-text {
+            font-size: 1.125rem;
+        }
+
+        .upload-section.compact .upload-hint {
+            font-size: 0.875rem;
         }
 
         .upload-area {
             border: 2px dashed var(--border-secondary);
-            border-radius: 8px;
+            border-radius: 16px;
             padding: 4rem 2rem;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: var(--bg-secondary);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #f8fafc 100%);
             position: relative;
             overflow: hidden;
         }
@@ -122,24 +180,73 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: var(--primary);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: all 0.4s ease;
+        }
+
+        .upload-area::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(99, 102, 241, 0.1) 50%,
+                transparent 70%
+            );
+            opacity: 0;
+            transform: rotate(0deg);
+            transition: all 0.6s ease;
         }
 
         .upload-area:hover {
-            border-color: var(--primary);
-            background: var(--bg-tertiary);
+            border-color: #6366f1;
+            background: linear-gradient(135deg, #f8fafc 0%, #faf5ff 50%, #f8fafc 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.2);
         }
 
         .upload-area:hover::before {
-            opacity: 0.02;
+            opacity: 0.03;
+        }
+
+        .upload-area:hover::after {
+            opacity: 1;
+            animation: shimmer 2s infinite;
+        }
+
+        .upload-area:hover .upload-icon {
+            transform: translateY(-10px) scale(1.1);
         }
 
         .upload-area.dragover {
-            border-color: var(--primary);
-            background: var(--bg-tertiary);
+            border-color: #6366f1;
             border-style: solid;
+            background: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%);
+            transform: scale(1.02);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 12px 24px -8px rgba(99, 102, 241, 0.3);
+        }
+
+        .upload-area.dragover::before {
+            opacity: 0.05;
+        }
+
+        .upload-area.dragover .upload-icon {
+            animation: bounce 0.6s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: rotate(0deg) translateX(-100%); }
+            100% { transform: rotate(0deg) translateX(100%); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) scale(1.1); }
+            50% { transform: translateY(-20px) scale(1.15); }
         }
 
         input[type="file"] {
@@ -152,9 +259,11 @@
         }
 
         .upload-icon {
-            font-size: 4rem;
+            font-size: 5rem;
             margin-bottom: 1.5rem;
             animation: float 3s ease-in-out infinite;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.2));
         }
 
         @keyframes float {
@@ -164,34 +273,122 @@
 
         .upload-text {
             font-size: 1.5rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-primary);
             margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .upload-hint {
             color: var(--text-muted);
-            font-size: 0.95rem;
+            font-size: 1rem;
+            font-weight: 400;
         }
 
         .upload-button {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
             margin-top: 1.5rem;
-            padding: 0.625rem 1.5rem;
-            background: var(--primary);
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
             border: none;
-            border-radius: 6px;
-            font-weight: 500;
-            font-size: 0.875rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 2px 0 var(--shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
         }
 
         .upload-button:hover {
-            background: var(--primary-dark);
-            box-shadow: 0 1px 3px 0 var(--shadow);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .upload-button:hover::before {
+            left: 100%;
+        }
+
+        .upload-button:active {
+            transform: translateY(0);
+        }
+
+        /* File Preview Card */
+        .file-preview {
+            display: none;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            animation: fadeInUp 0.4s ease;
+        }
+
+        .file-preview.active {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-preview-icon {
+            font-size: 2.5rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .file-preview-info {
+            flex: 1;
+        }
+
+        .file-preview-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 1.05rem;
+        }
+
+        .file-preview-size {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .file-preview-remove {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            color: #dc2626;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .file-preview-remove:hover {
+            background: rgba(220, 38, 38, 0.15);
+            border-color: rgba(220, 38, 38, 0.3);
         }
 
         /* Loading State */
@@ -208,8 +405,8 @@
 
         .spinner-container {
             position: relative;
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             margin: 0 auto 2rem;
         }
 
@@ -217,15 +414,32 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
+            border: 5px solid transparent;
+            border-top-color: #6366f1;
+            border-right-color: #8b5cf6;
             border-radius: 50%;
-            animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
         }
 
         .spinner:nth-child(2) {
-            border-top-color: var(--secondary);
-            animation-delay: -0.3s;
+            border-top-color: #8b5cf6;
+            border-right-color: #a78bfa;
+            animation-delay: -0.4s;
+            width: 80%;
+            height: 80%;
+            top: 10%;
+            left: 10%;
+        }
+
+        .spinner:nth-child(3) {
+            border-top-color: #a78bfa;
+            border-right-color: #c4b5fd;
+            animation-delay: -0.8s;
+            width: 60%;
+            height: 60%;
+            top: 20%;
+            left: 20%;
         }
 
         @keyframes spin {
@@ -235,7 +449,18 @@
 
         .loading-text {
             font-size: 1.125rem;
-            color: var(--text-secondary);
+            font-weight: 600;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .loading-subtext {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
         }
 
         /* Error State */
@@ -259,6 +484,139 @@
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-10px); }
             75% { transform: translateX(10px); }
+        }
+
+        /* Features Section */
+        .features-section {
+            margin-bottom: 4rem;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+        }
+
+        .features-section.hidden,
+        .examples-section.hidden {
+            display: none;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .feature-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .feature-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .feature-card:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px -4px var(--shadow);
+            border-color: var(--border-secondary);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* Examples Section */
+        .examples-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+            margin-bottom: 4rem;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .example-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .example-item:hover {
+            border-color: #6366f1;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        }
+
+        .example-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6366f1;
+            margin-bottom: 0.5rem;
+        }
+
+        .example-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .example-description {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.5;
         }
 
         /* Results */
@@ -800,7 +1158,25 @@
     <div class="container">
         <header>
             <div class="logo">zapdat</div>
-            <p class="tagline">Instant insights from your data. Fast. Private. Client-side.</p>
+            <h1 class="tagline">Instant insights from your CSV data</h1>
+            <p class="description">
+                Upload your CSV file and get powerful analytics in seconds. No setup, no coding, no data ever leaves your browser.
+                Just drag, drop, and discover what your data is telling you.
+            </p>
+            <div class="hero-badges">
+                <span class="badge">
+                    <span class="badge-icon">🔒</span>
+                    <span>100% Client-Side</span>
+                </span>
+                <span class="badge">
+                    <span class="badge-icon">⚡</span>
+                    <span>Instant Analysis</span>
+                </span>
+                <span class="badge">
+                    <span class="badge-icon">📊</span>
+                    <span>Smart Visualizations</span>
+                </span>
+            </div>
         </header>
 
         <div class="upload-section">
@@ -809,21 +1185,129 @@
                     <div class="upload-icon">📊</div>
                     <div class="upload-text">Drop your data file here</div>
                     <div class="upload-hint">or click to browse • Supports CSV, Excel, JSON, Parquet, and more</div>
-                    <button class="upload-button">Choose File</button>
+                    <button class="upload-button">
+                        <span>✨</span>
+                        <span>Choose File</span>
+                    </button>
                 </div>
                 <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json,.tsv,.txt,.parquet,.feather,.pkl,.pickle,.db,.sqlite,.sqlite3,.h5,.hdf5,.orc">
+            </div>
+
+            <div class="file-preview" id="filePreview">
+                <div class="file-preview-icon">📄</div>
+                <div class="file-preview-info">
+                    <div class="file-preview-name" id="fileName">sample.csv</div>
+                    <div class="file-preview-size" id="fileSize">0 KB</div>
+                </div>
+                <button class="file-preview-remove" id="removeFile">✕ Remove</button>
             </div>
 
             <div class="loading" id="loading">
                 <div class="spinner-container">
                     <div class="spinner"></div>
                     <div class="spinner"></div>
+                    <div class="spinner"></div>
                 </div>
                 <p class="loading-text">Analyzing your data...</p>
+                <p class="loading-subtext">This won't take long</p>
             </div>
 
             <div class="error" id="error"></div>
         </div>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="section-header">
+                <h2 class="section-title">What You'll Get</h2>
+                <p class="section-subtitle">Powerful analytics made simple. No data science degree required.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <span class="feature-icon">🎯</span>
+                    <h3 class="feature-title">Automatic Type Detection</h3>
+                    <p class="feature-description">
+                        Smart identification of numeric, categorical, text, and datetime columns.
+                        We handle the complexity so you don't have to.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">📈</span>
+                    <h3 class="feature-title">Essential Statistics</h3>
+                    <p class="feature-description">
+                        Mean, median, standard deviation, quartiles, and more. Get the stats that actually matter,
+                        presented clearly and beautifully.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🎨</span>
+                    <h3 class="feature-title">Interactive Visualizations</h3>
+                    <p class="feature-description">
+                        Histograms, bar charts, scatter plots, and correlation matrices.
+                        All rendered instantly with professional-grade Plotly charts.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <span class="feature-icon">🔍</span>
+                    <h3 class="feature-title">Data Quality Insights</h3>
+                    <p class="feature-description">
+                        Spot missing values, duplicates, and outliers at a glance.
+                        Know exactly what you're working with before diving deeper.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Examples Section -->
+        <section class="examples-section">
+            <div class="section-header">
+                <h2 class="section-title">Perfect For</h2>
+                <p class="section-subtitle">From quick data checks to deep analysis, zapdat has you covered</p>
+            </div>
+            <div class="examples-grid">
+                <div class="example-item">
+                    <div class="example-label">Sales Data</div>
+                    <div class="example-title">Revenue Analysis</div>
+                    <p class="example-description">
+                        Upload your sales CSV and instantly see trends, top products, and revenue distributions by category or region.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Marketing</div>
+                    <div class="example-title">Campaign Performance</div>
+                    <p class="example-description">
+                        Track conversion rates, identify best-performing channels, and spot anomalies in your marketing data.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Customer Data</div>
+                    <div class="example-title">User Behavior</div>
+                    <p class="example-description">
+                        Analyze user demographics, engagement patterns, and retention metrics without writing a single line of code.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Financial</div>
+                    <div class="example-title">Expense Tracking</div>
+                    <p class="example-description">
+                        Get instant breakdowns of spending by category, identify outliers, and visualize budget allocation.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Scientific</div>
+                    <div class="example-title">Research Data</div>
+                    <p class="example-description">
+                        Quick exploratory analysis of experimental results, correlation studies, and distribution analysis.
+                    </p>
+                </div>
+                <div class="example-item">
+                    <div class="example-label">Operations</div>
+                    <div class="example-title">Performance Metrics</div>
+                    <p class="example-description">
+                        Monitor KPIs, track system performance, and identify bottlenecks in your operational data.
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <div class="chart-builder" id="chartBuilder">
             <div class="builder-card">
@@ -895,17 +1379,26 @@
         const results = document.getElementById('results');
         const errorDiv = document.getElementById('error');
         const uploadButton = document.querySelector('.upload-button');
+        const filePreview = document.getElementById('filePreview');
+        const removeFileBtn = document.getElementById('removeFile');
 
         // Chart builder state
         let currentCacheKey = null;
         let columnInfo = null;
         let selectedChartType = null;
+        let currentFile = null;
 
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadButton.addEventListener('click', (e) => {
             e.stopPropagation();
             fileInput.click();
+        });
+
+        // Remove file handler
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            clearFile();
         });
 
         // Drag and drop
@@ -922,13 +1415,55 @@
             e.preventDefault();
             uploadArea.classList.remove('dragover');
             const file = e.dataTransfer.files[0];
-            if (file) handleFile(file);
+            if (file) {
+                currentFile = file;
+                showFilePreview(file);
+            }
         });
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) handleFile(file);
+            if (file) {
+                currentFile = file;
+                showFilePreview(file);
+            }
         });
+
+        function showFilePreview(file) {
+            // Show file details
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            filePreview.classList.add('active');
+
+            // Auto-analyze after a short delay for better UX
+            setTimeout(() => {
+                if (currentFile) handleFile(currentFile);
+            }, 800);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function clearFile() {
+            currentFile = null;
+            fileInput.value = '';
+            filePreview.classList.remove('active');
+            results.classList.remove('active');
+            document.getElementById('chartBuilder').classList.remove('active');
+            errorDiv.classList.remove('active');
+
+            // Show landing page sections again
+            document.querySelector('.features-section')?.classList.remove('hidden');
+            document.querySelector('.examples-section')?.classList.remove('hidden');
+
+            // Restore upload section to full size
+            document.querySelector('.upload-section')?.classList.remove('compact');
+        }
 
         async function handleFile(file) {
             // Validate file extension
@@ -939,6 +1474,7 @@
 
             if (!supportedFormats.includes(fileExt)) {
                 showError(`Unsupported file format. Supported: ${supportedFormats.join(', ')}`);
+                clearFile();
                 return;
             }
 
@@ -976,9 +1512,12 @@
                     currentCacheKey = data.cache_key;
                     await loadChartBuilder();
                 }
+
+                // Keep file preview visible after successful analysis
             } catch (error) {
                 console.error('Error in handleFile:', error);
                 showError(error.message);
+                clearFile();
             } finally {
                 loading.classList.remove('active');
             }
@@ -990,6 +1529,13 @@
         }
 
         function displayResults(analysis) {
+            // Hide landing page sections
+            document.querySelector('.features-section')?.classList.add('hidden');
+            document.querySelector('.examples-section')?.classList.add('hidden');
+
+            // Make upload section compact
+            document.querySelector('.upload-section')?.classList.add('compact');
+
             results.classList.add('active');
             results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
