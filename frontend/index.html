@@ -1034,7 +1034,9 @@
         }
 
         // Show copy toast notification
-        function showCopyToast(value) {
+        function showCopyToast(value, success = true) {
+            console.log('showCopyToast called with value:', value, 'success:', success);
+
             // Remove existing toast if any
             const existingToast = document.querySelector('.copy-toast');
             if (existingToast) {
@@ -1050,7 +1052,11 @@
                 ? (Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
                 : value;
 
-            toast.innerHTML = `✓ Copied <span class="copy-toast-value">${displayValue}</span> to clipboard`;
+            const message = success
+                ? `✓ Copied <span class="copy-toast-value">${displayValue}</span> to clipboard`
+                : `⚠️ Failed to copy (see console)`;
+
+            toast.innerHTML = message;
 
             document.body.appendChild(toast);
 
@@ -1062,6 +1068,7 @@
 
         // Copy number to clipboard and show feedback
         function copyToClipboard(value, element) {
+            console.log('copyToClipboard called with value:', value);
             navigator.clipboard.writeText(value).then(() => {
                 // Show visual feedback on the element
                 const originalText = element.textContent;
@@ -1078,19 +1085,37 @@
                 }, 1000);
             }).catch(err => {
                 console.error('Failed to copy:', err);
+                alert('Failed to copy: ' + err.message);
             });
         }
 
         // Copy stat value from card
-        function copyStatValue(value, event) {
-            event.stopPropagation();
+        window.copyStatValue = function(value, event) {
+            console.log('copyStatValue called!', 'value:', value, 'event:', event);
+
+            if (event) {
+                event.stopPropagation();
+            }
+
             const rawValue = value.toString();
+            console.log('Attempting to copy:', rawValue);
+
+            // Check if clipboard API is available
+            if (!navigator.clipboard) {
+                console.error('Clipboard API not available');
+                alert('Clipboard API not available. Please use HTTPS or localhost.');
+                return;
+            }
+
             navigator.clipboard.writeText(rawValue).then(() => {
-                showCopyToast(value);
+                console.log('Copy successful!');
+                showCopyToast(value, true);
             }).catch(err => {
                 console.error('Failed to copy:', err);
+                showCopyToast(value, false);
+                alert('Copy failed: ' + err.message);
             });
-        }
+        };
 
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
