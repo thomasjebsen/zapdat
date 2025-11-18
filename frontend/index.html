@@ -137,6 +137,28 @@
             box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
             animation: fadeInUp 0.8s ease 0.2s both;
             position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section.compact {
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .upload-section.compact .upload-area {
+            padding: 2rem 1.5rem;
+        }
+
+        .upload-section.compact .upload-icon {
+            font-size: 3rem;
+        }
+
+        .upload-section.compact .upload-text {
+            font-size: 1.125rem;
+        }
+
+        .upload-section.compact .upload-hint {
+            font-size: 0.875rem;
         }
 
         .upload-area {
@@ -467,6 +489,12 @@
         /* Features Section */
         .features-section {
             margin-bottom: 4rem;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+        }
+
+        .features-section.hidden,
+        .examples-section.hidden {
+            display: none;
         }
 
         .section-header {
@@ -1405,6 +1433,13 @@
             results.classList.remove('active');
             document.getElementById('chartBuilder').classList.remove('active');
             errorDiv.classList.remove('active');
+
+            // Show landing page sections again
+            document.querySelector('.features-section')?.classList.remove('hidden');
+            document.querySelector('.examples-section')?.classList.remove('hidden');
+
+            // Restore upload section to full size
+            document.querySelector('.upload-section')?.classList.remove('compact');
         }
 
         async function handleFile(file) {
@@ -1471,6 +1506,13 @@
         }
 
         function displayResults(analysis) {
+            // Hide landing page sections
+            document.querySelector('.features-section')?.classList.add('hidden');
+            document.querySelector('.examples-section')?.classList.add('hidden');
+
+            // Make upload section compact
+            document.querySelector('.upload-section')?.classList.add('compact');
+
             results.classList.add('active');
             results.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
