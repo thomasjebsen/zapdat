@@ -1,11 +1,12 @@
 """
 Custom visualization generators for sexy charts
 """
-import pandas as pd
+from typing import Any, Dict, List, Optional
+
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from typing import Dict, Any, List, Optional
 
 
 class ChartGenerator:
@@ -61,8 +62,11 @@ class ChartGenerator:
         # Try to add trendline if statsmodels is available
         trendline = None
         try:
-            if pd.api.types.is_numeric_dtype(df_clean[x_column]) and pd.api.types.is_numeric_dtype(df_clean[y_column]):
-                import statsmodels
+            x_is_numeric = pd.api.types.is_numeric_dtype(df_clean[x_column])
+            y_is_numeric = pd.api.types.is_numeric_dtype(df_clean[y_column])
+            if x_is_numeric and y_is_numeric:
+                import statsmodels  # noqa: F401
+
                 trendline = "ols"
         except ImportError:
             pass  # statsmodels not available, skip trendline
@@ -301,10 +305,15 @@ class ChartGenerator:
             color_discrete_sequence=self._get_color_scheme(color_scheme)
         )
 
+        hover_template = (
+            '<b>%{label}</b><br>'
+            'Count: %{value}<br>'
+            'Percentage: %{percent}<extra></extra>'
+        )
         fig.update_traces(
             textposition='inside',
             textinfo='percent+label',
-            hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
+            hovertemplate=hover_template,
         )
 
         fig.update_layout(height=600)
