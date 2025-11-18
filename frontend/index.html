@@ -922,6 +922,44 @@
             return sign + absNum.toString();
         }
 
+        // Format number with tooltip showing full value on hover and click-to-copy
+        function formatNumberWithTooltip(num) {
+            if (num === null || num === undefined || isNaN(num)) {
+                return 'N/A';
+            }
+
+            const abbreviated = abbreviateNumber(num);
+            const fullValue = Number.isInteger(num) ? num.toLocaleString() : num.toFixed(2);
+            const rawValue = num.toString();
+
+            // Only add tooltip and click-to-copy if number was actually abbreviated
+            if (abbreviated !== num.toString() && abbreviated !== 'N/A') {
+                return `<span title="Click to copy: ${fullValue}" style="cursor: pointer;" onclick="copyToClipboard('${rawValue}', this)">${abbreviated}</span>`;
+            }
+            return abbreviated;
+        }
+
+        // Copy number to clipboard and show feedback
+        function copyToClipboard(value, element) {
+            navigator.clipboard.writeText(value).then(() => {
+                // Show visual feedback
+                const originalText = element.textContent;
+                const originalTitle = element.title;
+                element.textContent = '✓';
+                element.title = 'Copied!';
+                element.style.color = '#10b981';
+
+                // Reset after 1 second
+                setTimeout(() => {
+                    element.textContent = originalText;
+                    element.title = originalTitle;
+                    element.style.color = '';
+                }, 1000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
         // Click handlers
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadButton.addEventListener('click', (e) => {
@@ -1022,19 +1060,19 @@
 
             overviewStats.innerHTML = `
                 <div class="stat-box" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-                    <div class="stat-value">${abbreviateNumber(overview.rows)}</div>
+                    <div class="stat-value">${formatNumberWithTooltip(overview.rows)}</div>
                     <div class="stat-label">Rows</div>
                 </div>
                 <div class="stat-box" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                    <div class="stat-value">${abbreviateNumber(overview.columns)}</div>
+                    <div class="stat-value">${formatNumberWithTooltip(overview.columns)}</div>
                     <div class="stat-label">Columns</div>
                 </div>
                 <div class="stat-box" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                    <div class="stat-value">${abbreviateNumber(totalMissing)}</div>
+                    <div class="stat-value">${formatNumberWithTooltip(totalMissing)}</div>
                     <div class="stat-label">Missing Values</div>
                 </div>
                 <div class="stat-box" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                    <div class="stat-value">${abbreviateNumber(overview.duplicates)}</div>
+                    <div class="stat-value">${formatNumberWithTooltip(overview.duplicates)}</div>
                     <div class="stat-label">Duplicates</div>
                 </div>
             `;
@@ -1086,7 +1124,7 @@
                         return 'N/A';
                     } else if (typeof value === 'number') {
                         return Number.isInteger(value) ?
-                            abbreviateNumber(value) :
+                            formatNumberWithTooltip(value) :
                             value.toFixed(2);
                     } else {
                         return value;
@@ -1204,7 +1242,7 @@
                     valueCountsHtml += `
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 0.5rem; color: var(--text-primary);">${category}</td>
-                            <td style="padding: 0.5rem; text-align: right; font-weight: 500; color: var(--text-primary);">${abbreviateNumber(count)}</td>
+                            <td style="padding: 0.5rem; text-align: right; font-weight: 500; color: var(--text-primary);">${formatNumberWithTooltip(count)}</td>
                             <td style="padding: 0.5rem; text-align: right; color: var(--text-secondary);">${percentage}%</td>
                         </tr>
                     `;
